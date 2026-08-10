@@ -157,8 +157,6 @@ function WorkflowRun() {
               error
               started_at
               completed_at
-              approved_by
-              approved_at
             }
           }
         }

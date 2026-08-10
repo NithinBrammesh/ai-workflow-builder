@@ -127,23 +127,15 @@ const PAUSE_STEP_RUN = `
 `;
 
 const APPROVE_STEP_RUN = `
-  mutation ApproveStepRun(
-    $id: uuid!
-    $approvedBy: uuid!
-  ) {
+  mutation ApproveStepRun($id: uuid!) {
     update_step_runs_by_pk(
       pk_columns: { id: $id }
       _set: {
         status: "completed"
-        approved_by: $approvedBy
-        approved_at: "now()"
-        completed_at: "now()"
       }
     ) {
       id
       status
-      approved_by
-      approved_at
     }
   }
 `;
