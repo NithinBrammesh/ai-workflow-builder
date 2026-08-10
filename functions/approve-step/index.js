@@ -138,9 +138,14 @@ module.exports = async (req, res) => {
     // 5. Approve the approval step
     // --------------------------------------------------
 
+    const approvedAt = new Date().toISOString();
+    const completedAt = approvedAt;
+
     await graphqlRequest(APPROVE_STEP_RUN, {
       id: step_run_id,
       approvedBy: userId,
+      approvedAt,
+      completedAt,
     });
 
     // --------------------------------------------------
