@@ -1,0 +1,12 @@
+{
+  "name": "ai-workflow-builder-functions",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "description": "Nhost serverless functions: workflow-execution and approve-step. No dependencies needed - uses the built-in Node 18+ fetch API.",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
