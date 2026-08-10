@@ -53,6 +53,7 @@ const GET_STEP_RUN = `
       status
       workflow_run_id
       workflow_step_id
+      input
 
       workflow_run {
         id

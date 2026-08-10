@@ -38,8 +38,53 @@ async function executeWorkflow(workflowId, input, userId) {
 
   let currentData = input;
 
+  // Current conditional branch.
+  // null = no branch selected yet.
+  // "true" / "false" = active branch.
+  let activeBranch = null;
+
   // 5. Execute steps sequentially
   for (const step of workflow.workflow_steps) {
+    // --------------------------------------------------
+    // Conditional branch filtering
+    // --------------------------------------------------
+    //
+    // Example:
+    //
+    // condition step returns:
+    // {
+    //   ...input,
+    //   _branch: "true"
+    // }
+    //
+    // Following steps can have:
+    //
+    // config: { "branch": "true" }
+    // config: { "branch": "false" }
+    //
+    // Only the matching branch is executed.
+    // Steps without config.branch always execute.
+    // --------------------------------------------------
+
+    const configuredBranch = step.config?.branch;
+
+    if (
+      activeBranch !== null &&
+      configuredBranch !== undefined &&
+      String(configuredBranch) !== String(activeBranch)
+    ) {
+      console.log(
+        `[branch] Skipping step "${step.name}" ` +
+          `(step branch=${configuredBranch}, active branch=${activeBranch})`
+      );
+
+      continue;
+    }
+
+    // --------------------------------------------------
+    // Create step run
+    // --------------------------------------------------
+
     const stepRun = await createStepRun(
       run.id,
       step.id,
@@ -49,13 +94,28 @@ async function executeWorkflow(workflowId, input, userId) {
     let output;
 
     try {
+      // --------------------------------------------------
       // Execute current step
-      output = await executeStep(step, currentData);
-    } catch (error) {
-      // Step failed
-      await failStepRun(stepRun.id, error.message);
+      // --------------------------------------------------
 
+    output = await executeStep(step, currentData, {
+      workflowRunId: run.id,
+    });
+    
+    } catch (error) {
+      // --------------------------------------------------
+      // Step failed
+      // --------------------------------------------------
+
+      await failStepRun(
+        stepRun.id,
+        error.message
+      );
+
+      // --------------------------------------------------
       // Workflow failed
+      // --------------------------------------------------
+
       await finishWorkflowRun(
         run.id,
         "failed",
@@ -69,9 +129,12 @@ async function executeWorkflow(workflowId, input, userId) {
     // --------------------------------------------------
     // Approval gate
     // --------------------------------------------------
-
+    //
     // approval_gate returns:
-    // { __pause: true, ... }
+    // { __pause: true, data: input }
+    //
+    // The step remains paused and the whole workflow pauses.
+    // --------------------------------------------------
 
     if (output && output.__pause) {
       await pauseStepRun(stepRun.id);
@@ -90,7 +153,7 @@ async function executeWorkflow(workflowId, input, userId) {
     }
 
     // --------------------------------------------------
-    // Normal step completion
+    // Complete normal step
     // --------------------------------------------------
 
     await completeStepRun(
@@ -98,7 +161,33 @@ async function executeWorkflow(workflowId, input, userId) {
       output
     );
 
+    // --------------------------------------------------
+    // Detect branch decision
+    // --------------------------------------------------
+
+    if (
+      step.type === "conditional_branch" ||
+      step.type === "condition"
+    ) {
+      if (
+        output &&
+        (
+          output._branch === "true" ||
+          output._branch === "false"
+        )
+      ) {
+        activeBranch = output._branch;
+
+        console.log(
+          `[branch] Condition selected branch=${activeBranch}`
+        );
+      }
+    }
+
+    // --------------------------------------------------
     // Output of this step becomes input to next step
+    // --------------------------------------------------
+
     currentData = output;
   }
 
@@ -113,7 +202,10 @@ async function executeWorkflow(workflowId, input, userId) {
     null
   );
 
+  // --------------------------------------------------
   // Increment organization usage
+  // --------------------------------------------------
+
   await incrementQuota(workflow.org_id);
 
   return {
@@ -185,7 +277,7 @@ async function assertCallerCanRun(orgId, userId) {
     );
   }
 
-  // owner and editor are allowed
+  // Only owner and editor can trigger workflows.
   if (
     membership.role !== "owner" &&
     membership.role !== "editor"
@@ -359,6 +451,10 @@ async function incrementQuota(orgId) {
     }
   );
 }
+
+// --------------------------------------------------
+// Export
+// --------------------------------------------------
 
 module.exports = {
   executeWorkflow,

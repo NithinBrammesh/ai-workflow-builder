@@ -143,7 +143,9 @@ module.exports = async (req, res) => {
         newStepRun.insert_step_runs_one.id;
 
       try {
-        const output = await executeStep(step, currentData);
+        const output = await executeStep(step, currentData, {
+          workflowRunId: stepRun.workflow_run_id,
+        });
 
         await graphqlRequest(COMPLETE_STEP_RUN, {
           id: newStepRunId,

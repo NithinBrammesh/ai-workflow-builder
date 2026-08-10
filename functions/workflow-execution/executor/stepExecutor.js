@@ -4,14 +4,13 @@ const { executeHttpStep } = require("../steps/httpStep");
 const { executeConditionStep } = require("../steps/conditionStep");
 const { executeApprovalStep } = require("../steps/approvalStep");
 const { executeNotificationStep } = require("../steps/notificationStep");
+const { executeDBWriteStep } = require("../steps/dbWriteStep");
 
-// NOTE: your current DB rows use type = "input" / "ai". This dispatcher
-// accepts both the short names you already seeded AND the assignment's
-// official names (llm_call, http_request, db_write, notify,
-// conditional_branch, approval_gate) so you don't have to go rename your
-// existing sample data right now - just use the official names for any
-// NEW steps you create from here on, since that's what the grader expects.
-async function executeStep(step, input) {
+// NOTE:
+// Accept both the short names already used by existing sample data
+// and the assignment's official step names.
+
+async function executeStep(step, input, context = {}) {
   switch (step.type) {
     case "input":
       return executeInputStep(step, input);
@@ -37,11 +36,7 @@ async function executeStep(step, input) {
       return executeNotificationStep(step, input);
 
     case "db_write":
-      // Deliberately left as a thin pass-through for you to fill in once
-      // you decide which table a db_write step should save to - the
-      // pattern is identical to httpStep.js, just swap fetch() for a
-      // graphqlRequest() insert mutation.
-      return input;
+      return executeDBWriteStep(step, input, context);
 
     default:
       throw new Error(`Unknown step type: ${step.type}`);
