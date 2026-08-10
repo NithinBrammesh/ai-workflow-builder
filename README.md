@@ -1,171 +1,84 @@
-AI Workflow Builder
+# AI Workflow Builder
 
-A full-stack workflow automation platform built with Nhost, Hasura, PostgreSQL, GraphQL, Node.js, and React.
+A full-stack workflow automation system built with **Nhost, Hasura, PostgreSQL, GraphQL, Node.js, and React**.
 
-The system lets users define workflows as ordered steps and execute them through AI processing, HTTP integrations, conditional branching, human approval, database persistence, and notifications.
+The system allows users to define workflows as ordered steps and execute them with AI processing, HTTP requests, conditional branching, human approval, database persistence, notifications, execution history, quota checks, and organization-level authorization.
 
-1. System Design
+---
 
-High-Level Architecture
+## Architecture
 
-flowchart TB
-    Client["React Frontend"]
+```mermaid
+flowchart LR
+    UI[React Frontend] --> G[Hasura GraphQL]
+    UI --> F[Nhost Functions]
 
-    subgraph NHOST["Nhost Platform"]
-        GraphQL["Hasura GraphQL API"]
-        Functions["Nhost Serverless Functions"]
-    end
+    F --> E[Workflow Executor]
+    E --> A[Membership / Role Check]
+    E --> Q[Quota Check]
+    E --> S[Step Executor]
 
-    subgraph EXEC["Workflow Execution Layer"]
-        Executor["Workflow Executor"]
-        Auth["Membership / Role Check"]
-        Quota["Quota Check"]
-        StepExecutor["Step Executor"]
-    end
+    S --> AI[AI / LLM]
+    S --> HTTP[External APIs]
+    S --> C[Conditional Branch]
+    S --> AP[Approval Gate]
+    S --> DBW[DB Write]
+    S --> N[Notification]
 
-    subgraph STEPS["Workflow Steps"]
-        Input["Input"]
-        AI["AI / LLM"]
-        HTTP["HTTP Request"]
-        Condition["Conditional Branch"]
-        Approval["Approval Gate"]
-        DBWrite["DB Write"]
-        Notify["Notification"]
-    end
+    G --> DB[(PostgreSQL)]
+    E --> G
+    DBW --> DB
+```
 
-    DB[("PostgreSQL")]
+### Execution flow
 
-    Client --> GraphQL
-    Client --> Functions
+```text
+Request
+  ↓
+Load workflow + steps
+  ↓
+Check organization membership
+  ↓
+Check quota
+  ↓
+Create workflow_run
+  ↓
+Execute steps sequentially
+  ↓
+Create / complete / fail / pause step_runs
+  ↓
+Complete / fail / pause workflow_run
+```
 
-    Functions --> Executor
-    Executor --> Auth
-    Auth --> GraphQL
-    Executor --> Quota
-    Quota --> GraphQL
-    Executor --> StepExecutor
+---
 
-    StepExecutor --> Input
-    StepExecutor --> AI
-    StepExecutor --> HTTP
-    StepExecutor --> Condition
-    StepExecutor --> Approval
-    StepExecutor --> DBWrite
-    StepExecutor --> Notify
+## Tech Stack
 
-    GraphQL --> DB
-    DBWrite --> GraphQL
+| Technology | Purpose |
+|---|---|
+| React | Frontend |
+| Node.js 18+ | Workflow execution |
+| Nhost | Backend platform and serverless functions |
+| Hasura | GraphQL API and authorization |
+| PostgreSQL | Persistent data |
+| GraphQL | Application/database communication |
+| LLM integration | AI workflow steps |
+| REST/HTTP | External API integration |
 
-Design Responsibilities
+---
 
-Layer
+## Database Model
 
-Responsibility
+The system separates workflow definitions from execution state.
 
-React
-
-Workflow UI and execution status
-
-Hasura
-
-GraphQL API, database access and authorization
-
-Nhost Functions
-
-Server-side workflow execution
-
-Workflow Executor
-
-Orchestration and execution lifecycle
-
-Step Executor
-
-Dispatches each step to its implementation
-
-PostgreSQL
-
-Workflow definitions and execution state
-
-External APIs
-
-HTTP integrations
-
-AI Provider
-
-Classification/LLM processing
-
-2. Workflow Execution Design
-
-A workflow is executed sequentially using the step position.
-
-sequenceDiagram
-    participant U as User
-    participant F as Workflow Function
-    participant E as Workflow Executor
-    participant G as Hasura GraphQL
-    participant DB as PostgreSQL
-    participant S as Step Executor
-    participant X as External Service
-
-    U->>F: Start workflow
-    F->>E: workflow_id + input
-
-    E->>G: Load workflow + steps
-    G->>DB: Query workflow definition
-    DB-->>G: Workflow + ordered steps
-    G-->>E: Workflow
-
-    E->>G: Check membership
-    G->>DB: Validate org membership
-    DB-->>G: Role / membership
-    G-->>E: Authorized
-
-    E->>G: Check quota
-    G->>DB: Read quota
-    DB-->>G: Quota
-    G-->>E: Available
-
-    E->>G: Create workflow_run
-    G->>DB: INSERT workflow_run
-
-    loop Each workflow step
-        E->>G: Create step_run
-        G->>DB: INSERT step_run
-        E->>S: Execute step
-
-        alt External HTTP step
-            S->>X: HTTP request
-            X-->>S: Response
-        else AI step
-            S->>X: AI request
-            X-->>S: Classification
-        else Approval step
-            S-->>E: Pause workflow
-        end
-
-        E->>G: Complete / fail step_run
-        G->>DB: UPDATE step_run
-    end
-
-    E->>G: Complete workflow_run
-    G->>DB: UPDATE workflow_run
-
-3. Database Design
-
-The database separates workflow definitions from workflow execution state.
-
-Entity Relationship Diagram
-
+```mermaid
 erDiagram
-    organizations ||--o{ org_members : contains
+    organizations ||--o{ org_members : has
     organizations ||--o{ workflows : owns
-
     workflows ||--o{ workflow_steps : contains
     workflows ||--o{ workflow_runs : executes
-
     workflow_runs ||--o{ step_runs : contains
     workflow_steps ||--o{ step_runs : executes
-
     workflow_runs ||--o{ workflow_outputs : produces
 
     organizations {
@@ -177,7 +90,7 @@ erDiagram
     org_members {
         uuid id PK
         uuid org_id FK
-        uuid user_id
+        uuid user_id FK
         string role
     }
 
@@ -190,7 +103,6 @@ erDiagram
     workflow_steps {
         uuid id PK
         uuid workflow_id FK
-        string name
         string type
         int position
         jsonb config
@@ -220,182 +132,36 @@ erDiagram
         uuid workflow_run_id FK
         uuid workflow_step_id FK
         jsonb data
-        timestamp created_at
     }
+```
 
-Data Model Concept
+---
 
-Organization
-    │
-    ├── Members
-    │
-    └── Workflows
-           │
-           ├── Workflow Steps
-           │
-           └── Workflow Runs
-                    │
-                    ├── Step Runs
-                    │
-                    └── Workflow Outputs
+## Supported Workflow Steps
 
-This allows the system to keep the reusable workflow definition independent from every individual execution.
-
-4. Workflow State Model
-
-stateDiagram-v2
-    [*] --> running
-
-    running --> paused: approval_gate
-    paused --> running: human approval
-
-    running --> completed: all steps succeed
-    running --> failed: step failure
-
-    paused --> failed: resume failure
-    completed --> [*]
-    failed --> [*]
-
-Step runs follow a similar lifecycle:
-
-running
-   ├── completed
-   ├── failed
-   └── paused
-
-5. Conditional Branching
-
-The condition step evaluates workflow data and produces a branch marker.
-
-Example:
-
-{
-  "_branch": "true",
-  "category": "order",
-  "confidence": 0.75
-}
-
-Steps can contain:
-
-{
-  "config": {
-    "branch": "true"
-  }
-}
-
-The executor compares the active branch with the step configuration and skips non-matching branch steps.
-
-flowchart TD
-    A["AI Classification"] --> B["Condition"]
-    B -->|true| C["Order-specific steps"]
-    B -->|false| D["Non-order steps"]
-    C --> E["Continue workflow"]
-    D --> E
-
-6. Approval and Resume
-
-Human approval is implemented as a persisted workflow state rather than keeping a serverless process alive.
-
-Workflow Running
-       ↓
-Approval Gate
-       ↓
-Workflow Paused
-       ↓
-Human approves
-       ↓
-Approval Step Completed
-       ↓
-Workflow Resumed
-       ↓
-Remaining steps execute
-
-The approval function retrieves the paused step run, validates authorization, marks the approval step as completed, resumes the workflow, and executes the remaining steps.
-
-7. Authorization and Organization Isolation
-
-Authorization is designed as two layers:
-
-flowchart LR
-    Request["User Request"]
-    H["Hasura Row Permissions"]
-    A["Application Membership Check"]
-    E["Workflow Executor"]
-    DB[("PostgreSQL")]
-
-    Request --> H
-    H --> A
-    A --> E
-    E --> DB
-
-The intended organization boundary is:
-
-user
-  ↓
-org_members
-  ↓
-organization
-  ↓
-workflow
-  ↓
-workflow_run
-  ↓
-step_run
-
-Planned application roles:
-
-owner
-editor
-viewer
-
-The executor already performs organization membership/role checks. The remaining security work is to fully configure and test Hasura row-level permissions for these roles.
-
-8. Supported Workflow Steps
-
+```text
 input
 ai / llm_call
 http / http_request
-condition / conditional_branch
-approval / approval_gate
+conditional_branch / condition
+approval_gate / approval
 db_write
 notify / notification
+```
 
-Each step follows the same execution contract:
+Steps execute according to:
 
-input
-  ↓
-executeStep()
-  ↓
-step implementation
-  ↓
-output
+```text
+workflow_steps.position ASC
+```
 
-The dispatcher is centralized in:
+Each execution creates a `workflow_run`, while each executed step creates a `step_run`.
 
-functions/workflow-execution/executor/stepExecutor.js
+---
 
-This makes adding a new step type straightforward without changing the main workflow orchestration logic.
+## Example Workflow
 
-9. Error Handling and Persistence
-
-Step execution is protected with try/catch.
-
-flowchart TD
-    A["Execute Step"] --> B{"Success?"}
-    B -->|Yes| C["Complete step_run"]
-    B -->|No| D["Store step error"]
-    D --> E["Mark workflow failed"]
-
-    C --> F{"Approval?"}
-    F -->|Yes| G["Pause workflow"]
-    F -->|No| H["Continue"]
-
-For HTTP failures, the implementation retries the request before marking the step as failed.
-
-Execution state is persisted in PostgreSQL, so workflow history remains available after the function request ends.
-
-10. Example Workflow
-
+```text
 Receive Customer Request
           ↓
 Classify Request
@@ -408,28 +174,136 @@ Order Branch
       ↓
 Manager Approval
       ↓
-Save Workflow Result
+Save Result
       ↓
-Notify Customer Support
+Notify Support
+```
 
 Example input:
 
+```json
 {
   "customer_message": "I need help with my order"
 }
+```
 
-Current AI fallback:
+The current AI fallback returns:
 
+```json
 {
   "_stubbed": true,
   "category": "order",
   "confidence": 0.75
 }
+```
 
-11. Project Structure
+The condition selects the appropriate branch using `_branch`.
 
+---
+
+## Approval / Resume
+
+Approval gates use persistent state rather than keeping a serverless process alive.
+
+```text
+RUNNING
+   ↓
+PAUSED
+   ↓
+Human Approval
+   ↓
+RUNNING
+   ↓
+COMPLETED
+```
+
+The approval function validates the user's organization membership/role, completes the approval step, and resumes the remaining workflow.
+
+---
+
+## Error Handling
+
+Individual steps are protected with `try/catch`.
+
+```text
+Execute step
+    ↓
+ success → completed
+    ↓
+ failure → step_runs.error
+             ↓
+         workflow_runs.error
+```
+
+HTTP requests also support retry handling. A remote `HTTP 503` is retried before the workflow is marked failed.
+
+---
+
+## Authorization
+
+Authorization is designed in two layers:
+
+```text
+Layer 1: Hasura row-level permissions
+                ↓
+Layer 2: Node.js membership / role checks
+                ↓
+           Workflow Executor
+```
+
+Planned organization roles:
+
+```text
+owner
+editor
+viewer
+```
+
+The security boundary is based on:
+
+```text
+user → org_members → organization → workflow → workflow_run → step_run
+```
+
+> The application-level checks are implemented. The custom Hasura `owner/editor/viewer` row permissions still need to be fully configured and exported.
+
+---
+
+## GraphQL Operations
+
+GraphQL operations are centralized under:
+
+```text
+functions/workflow-execution/graphql/
+```
+
+Main queries:
+
+```text
+GetWorkflowWithSteps
+GetMembership
+GetOrgQuota
+GetStepRun
+```
+
+Main mutations cover:
+
+```text
+workflow run creation/update
+step run creation/completion/failure/pause
+approval
+quota update
+workflow output persistence
+```
+
+This keeps persistence logic separate from workflow step implementations.
+
+---
+
+## Project Structure
+
+```text
 ai-workflow-builder/
-├── frontend/
 ├── functions/
 │   ├── workflow-execution/
 │   │   ├── executor/
@@ -441,29 +315,42 @@ ai-workflow-builder/
 │   └── test-server.js
 ├── database/
 ├── hasura/
+├── frontend/
 └── README.md
+```
 
-12. Testing
+---
+
+## Testing
 
 Install dependencies:
 
+```bash
 cd functions
 npm install
+```
 
 Test GraphQL connectivity:
 
+```bash
 node test-graphql.js
+```
 
 Run the workflow:
 
+```bash
 node run-workflow.js
+```
 
 Test approval/resume:
 
+```bash
 node test-server.js
+```
 
-The current implementation has been verified against Nhost/Hasura with successful operations including:
+The implementation has been verified against the Nhost/Hasura backend with successful:
 
+```text
 GetWorkflowWithSteps
 GetMembership
 GetOrgQuota
@@ -476,64 +363,57 @@ ApproveStepRun
 ResumeWorkflowRun
 DbWriteOutput
 UpdateWorkflowRun
+```
 
-A complete workflow execution has also been verified with:
+A complete execution was also verified with:
 
+```json
 {
   "status": "completed",
   "error": null
 }
+```
 
-13. Current Status
+---
 
-Implemented
+## Current Status
 
-Sequential workflow execution
+### Working
 
-Multiple workflow step types
+- Sequential workflow execution
+- Multiple step types
+- AI fallback/stub
+- HTTP requests
+- Conditional branching
+- Human approval and resume
+- DB output persistence
+- Notifications
+- Workflow/step execution history
+- Quota checks
+- Application-level membership checks
+- Error handling and HTTP retries
+- GraphQL integration
 
-AI fallback/stub
+### Remaining
 
-HTTP integration
+- Configure Hasura `owner/editor/viewer` row permissions
+- Test cross-organization isolation with a second organization/user
+- Export Hasura metadata/migrations
+- Wire `triggerWorkflowRun` and `approveStep` as Hasura Actions
+- Replace client-supplied `user_id` with authenticated Nhost session/JWT identity
+- Add secure webhook trigger
+- Complete frontend integration
 
-Conditional branching
+---
 
-Human approval and resume
+## Engineering Focus
 
-Database output persistence
+The project emphasizes:
 
-Notifications
+**Backend Engineering · GraphQL · Database Design · Authorization · Workflow State Machines · Serverless Architecture · API Integration · Error Handling · Extensible Step Execution**
 
-Workflow and step execution history
+---
 
-Quota checks
+## Author
 
-Application-level membership checks
-
-Error handling and HTTP retries
-
-GraphQL integration
-
-Remaining
-
-Configure and test Hasura owner/editor/viewer row permissions
-
-Test cross-organization isolation using a second organization/user
-
-Export Hasura metadata and migrations
-
-Wire workflow execution and approval as Hasura Actions
-
-Replace request-body user_id with authenticated Nhost session/JWT identity
-
-Add secure webhook trigger
-
-Complete frontend integration
-
-Technology Summary
-
-Frontend: ReactBackend: Node.js / Nhost FunctionsAPI: GraphQL / HasuraDatabase: PostgreSQLAuthentication: NhostAI: LLM integration with development fallbackExternal Integration: HTTP/RESTArchitecture: Serverless workflow orchestration
-
-Author
-
-Nithin B
+**Nithin B**
