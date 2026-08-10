@@ -140,6 +140,7 @@ module.exports = async (req, res) => {
 
     await graphqlRequest(APPROVE_STEP_RUN, {
       id: step_run_id,
+      approvedBy: userId,
     });
 
     // --------------------------------------------------
