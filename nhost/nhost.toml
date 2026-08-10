@@ -49,7 +49,7 @@ disableAutoSignup = false
 [auth.user]
 [auth.user.roles]
 default = 'user'
-allowed = ['user', 'me']
+allowed = ['user', 'me', 'owner', 'editor', 'viewer']
 
 [auth.user.locale]
 default = 'en'
