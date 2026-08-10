@@ -7,6 +7,7 @@
   },
   "description": "Nhost serverless functions: workflow-execution and approve-step. No dependencies needed - uses the built-in Node 18+ fetch API.",
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3"
   }
 }

@@ -1,0 +1,186 @@
+/* =========================================================
+   FONTS
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* =========================================================
+   DESIGN TOKENS
+   ========================================================= */
+
+:root {
+  /* Surfaces */
+  --ink: #101018;
+  --ink-soft: #191a24;
+  --ink-line: rgba(255, 255, 255, 0.08);
+  --paper: #f8f7f3;
+  --surface: #ffffff;
+  --border: #e8e5dc;
+  --border-soft: #f0eee6;
+
+  /* Text */
+  --text-primary: #14141c;
+  --text-secondary: #6b6b76;
+  --text-muted: #9d9da6;
+  --text-on-ink: #e4e3ea;
+  --text-on-ink-muted: #83838f;
+
+  /* Brand — the "flow" system */
+  --flow-indigo: #5546ff;
+  --flow-indigo-dark: #4433e0;
+  --flow-indigo-soft: #eeecff;
+  --flow-violet: #9166ff;
+  --flow-coral: #ff6b4a;
+  --flow-coral-soft: #ffeee7;
+  --flow-gradient: linear-gradient(90deg, #5546ff 0%, #9166ff 55%, #ff6b4a 100%);
+  --flow-gradient-soft: linear-gradient(135deg, #f1efff 0%, #fff1ec 100%);
+
+  /* Status */
+  --sage: #1f9d6f;
+  --sage-soft: #e9f8f1;
+  --amber: #e2952f;
+  --amber-soft: #fdf3e2;
+  --danger: #e0483f;
+  --danger-soft: #fdeceb;
+
+  /* Type */
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo,
+    monospace;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(20, 20, 28, 0.04);
+  --shadow-md: 0 2px 8px rgba(20, 20, 28, 0.04), 0 12px 28px -12px rgba(20, 20, 28, 0.10);
+  --shadow-lg: 0 8px 24px -8px rgba(20, 20, 28, 0.16), 0 24px 48px -24px rgba(20, 20, 28, 0.18);
+  --shadow-glow-indigo: 0 8px 20px -6px rgba(85, 70, 255, 0.35);
+}
+
+/* =========================================================
+   GLOBAL RESET
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  font-size: 16px;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+
+  color: var(--text-primary);
+  background: var(--paper);
+
+  font-family: var(--font-body);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+#root {
+  min-height: 100vh;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+p {
+  line-height: 1.6;
+}
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* =========================================================
+   FORM ELEMENTS
+   ========================================================= */
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  color: #0f172a;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d8d5cb;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b9b6ac;
+}
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+  color: var(--flow-indigo-dark);
+  background: var(--flow-indigo-soft);
+}

@@ -1,4 +1,5 @@
-const { graphqlRequest } = require("../workflow-execution/graphql/client");
+const graphqlRequest = require("../workflow-execution/graphql/client").graphqlRequest;
+
 const {
   GET_STEP_RUN,
   GET_MEMBERSHIP,
@@ -14,14 +15,18 @@ const {
 } = require("../workflow-execution/graphql/mutations");
 
 const { executeStep } = require("../workflow-execution/executor/stepExecutor");
+const { getAuthenticatedUserId } = require("../workflow-execution/auth");
 
 // POST /v1/functions/approve-step
 //
 // Body:
 // {
-//   "step_run_id": "...",
-//   "user_id": "..."
+//   "step_run_id": "..."
 // }
+//
+// IMPORTANT:
+// user_id is intentionally NOT accepted.
+// The authenticated user comes from the verified JWT.
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -30,17 +35,25 @@ module.exports = async (req, res) => {
     });
   }
 
-  const { step_run_id, user_id } = req.body || {};
+  const { step_run_id } = req.body || {};
 
-  if (!step_run_id || !user_id) {
+  if (!step_run_id) {
     return res.status(400).json({
-      error: "step_run_id and user_id are required",
+      error: "step_run_id is required",
     });
   }
 
   try {
     // --------------------------------------------------
-    // 1. Get paused approval step
+    // 1. Authenticate caller
+    // --------------------------------------------------
+
+    const userId = getAuthenticatedUserId(req);
+
+    console.log(`[Auth] Approval requested by: ${userId}`);
+
+    // --------------------------------------------------
+    // 2. Get paused approval step
     // --------------------------------------------------
 
     const { step_runs_by_pk: stepRun } = await graphqlRequest(
@@ -63,36 +76,52 @@ module.exports = async (req, res) => {
     }
 
     // --------------------------------------------------
-    // 2. Check organization membership
+    // 3. Determine organization from the workflow
     // --------------------------------------------------
 
     const orgId = stepRun.workflow_run.workflow.org_id;
 
+    // --------------------------------------------------
+    // 4. Verify authenticated user's membership
+    // --------------------------------------------------
+
     const { org_members } = await graphqlRequest(
       GET_MEMBERSHIP,
       {
-        userId: user_id,
+        userId,
         orgId,
       }
     );
 
     const membership = org_members[0];
 
-    if (!membership || membership.role === "viewer") {
+    if (!membership) {
       return res.status(403).json({
-        error: "You don't have permission to approve this step",
+        error: "You are not a member of this organization",
+      });
+    }
+
+    // Viewer cannot approve.
+    if (
+      membership.role !== "owner" &&
+      membership.role !== "editor"
+    ) {
+      return res.status(403).json({
+        error: "Only owners and editors can approve workflow steps",
       });
     }
 
     // --------------------------------------------------
-    // 3. Approve the approval gate
+    // 5. Approve the approval step
     // --------------------------------------------------
 
     await graphqlRequest(APPROVE_STEP_RUN, {
-      id: step_run_id
-    });	
+      id: step_run_id,
+      approvedBy: userId,
+    });
+
     // --------------------------------------------------
-    // 4. Resume workflow
+    // 6. Resume workflow
     // --------------------------------------------------
 
     await graphqlRequest(RESUME_WORKFLOW_RUN, {
@@ -100,7 +129,7 @@ module.exports = async (req, res) => {
     });
 
     // --------------------------------------------------
-    // 5. Find steps after approval
+    // 7. Find steps after approval
     // --------------------------------------------------
 
     const steps = stepRun.workflow_run.workflow.workflow_steps;
@@ -115,21 +144,12 @@ module.exports = async (req, res) => {
 
     const remainingSteps = steps.slice(currentIndex + 1);
 
-    // IMPORTANT:
-    // The approval step's INPUT contains the output
-    // from the previous step.
-    //
-    // Previously this was:
-    //
-    // let currentData = {};
-    //
-    // which caused the workflow to lose all previous data.
-    const currentDataFromApproval = stepRun.input || {};
-
-    let currentData = currentDataFromApproval;
+    // The approval step's input contains the data
+    // produced before the approval gate.
+    let currentData = stepRun.input || {};
 
     // --------------------------------------------------
-    // 6. Execute remaining steps
+    // 8. Execute remaining steps
     // --------------------------------------------------
 
     for (const step of remainingSteps) {
@@ -143,9 +163,13 @@ module.exports = async (req, res) => {
         newStepRun.insert_step_runs_one.id;
 
       try {
-        const output = await executeStep(step, currentData, {
-          workflowRunId: stepRun.workflow_run_id,
-        });
+        const output = await executeStep(
+          step,
+          currentData,
+          {
+            workflowRunId: stepRun.workflow_run_id,
+          }
+        );
 
         await graphqlRequest(COMPLETE_STEP_RUN, {
           id: newStepRunId,
@@ -173,7 +197,7 @@ module.exports = async (req, res) => {
     }
 
     // --------------------------------------------------
-    // 7. Finish workflow
+    // 9. Finish workflow
     // --------------------------------------------------
 
     await graphqlRequest(UPDATE_WORKFLOW_RUN, {
@@ -188,12 +212,23 @@ module.exports = async (req, res) => {
       status: "completed",
       output: currentData,
     });
-
   } catch (error) {
     console.error("approveStep failed:", error);
 
+    const message = error.message || "Approval failed";
+
+    if (
+      message === "Authentication required" ||
+      message === "Invalid or expired authentication token" ||
+      message === "Authenticated user ID is missing"
+    ) {
+      return res.status(401).json({
+        error: message,
+      });
+    }
+
     return res.status(400).json({
-      error: error.message,
+      error: message,
     });
   }
 };
