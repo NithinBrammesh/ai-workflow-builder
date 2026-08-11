@@ -165,6 +165,59 @@ function getStepDescription(step) {
 }
 
 /* --------------------------------------------------
+   Default configuration for newly added steps
+-------------------------------------------------- */
+
+function getDefaultStepConfig(type) {
+  switch (type) {
+    case "input":
+      return {
+        description: "Accept incoming customer request.",
+      };
+
+    case "ai":
+      return {
+        description: "Classify request using AI.",
+      };
+
+    case "http_request":
+      return {
+        description: "Retrieve additional information from an API.",
+        url: "https://httpbin.org/get",
+        method: "GET",
+      };
+
+    case "conditional_branch":
+      return {
+        description: "Evaluate a condition and select a branch.",
+        field: "category",
+        operator: "equals",
+        value: "order",
+      };
+
+    case "approval_gate":
+      return {
+        description: "Wait for approval from an authorized user.",
+      };
+
+    case "db_write":
+      return {
+        description: "Save the workflow result.",
+      };
+
+    case "notify":
+      return {
+        description: "Send a workflow notification.",
+        channel: "console",
+        message: "Workflow completed: {{data}}",
+      };
+
+    default:
+      return {};
+  }
+}
+
+/* --------------------------------------------------
    Main component
 -------------------------------------------------- */
 
@@ -181,11 +234,18 @@ function WorkflowBuilder() {
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState("");
 
-  /*
-   * Temporary workflow input.
-   *
-   * Later we can make this configurable from the UI.
-   */
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const [newWorkflowName, setNewWorkflowName] = useState(
+    "Customer Support Workflow"
+  );
+
+  const [newWorkflowDescription, setNewWorkflowDescription] =
+    useState(
+      "AI-powered customer support workflow."
+    );
+
   const [customerMessage, setCustomerMessage] = useState(
     "I need help with my order"
   );
@@ -193,7 +253,75 @@ function WorkflowBuilder() {
   const isNew = !workflowId;
 
   /* --------------------------------------------------
-     Load workflow from PostgreSQL through GraphQL
+     Get current user's organization
+  -------------------------------------------------- */
+
+  const GET_MY_ORGANIZATION = `
+    query GetMyOrganization {
+      org_members(limit: 1) {
+        org_id
+        role
+      }
+    }
+  `;
+
+  /* --------------------------------------------------
+     Create workflow
+  -------------------------------------------------- */
+
+  const CREATE_WORKFLOW = `
+    mutation CreateWorkflow(
+      $orgId: uuid!
+      $name: String!
+      $description: String
+    ) {
+      insert_workflows_one(
+        object: {
+          org_id: $orgId
+          name: $name
+          description: $description
+        }
+      ) {
+        id
+        name
+        description
+        org_id
+      }
+    }
+  `;
+
+  /* --------------------------------------------------
+     Create workflow step
+  -------------------------------------------------- */
+
+  const CREATE_WORKFLOW_STEP = `
+    mutation CreateWorkflowStep(
+      $workflowId: uuid!
+      $name: String!
+      $type: String!
+      $position: Int!
+      $config: jsonb!
+    ) {
+      insert_workflow_steps_one(
+        object: {
+          workflow_id: $workflowId
+          name: $name
+          type: $type
+          position: $position
+          config: $config
+        }
+      ) {
+        id
+        name
+        type
+        position
+        config
+      }
+    }
+  `;
+
+  /* --------------------------------------------------
+     Load workflow
   -------------------------------------------------- */
 
   useEffect(() => {
@@ -228,15 +356,14 @@ function WorkflowBuilder() {
 
       setWorkflow(loadedWorkflow);
 
-      /*
-       * Select the first step initially.
-       */
       if (
         loadedWorkflow.workflow_steps?.length
       ) {
         setSelectedStep(
           loadedWorkflow.workflow_steps[0]
         );
+      } else {
+        setSelectedStep(null);
       }
     } catch (err) {
       console.error(
@@ -254,7 +381,108 @@ function WorkflowBuilder() {
   }
 
   /* --------------------------------------------------
-     Run the actual backend workflow
+     Add a new step to the workflow
+  -------------------------------------------------- */
+
+  async function handleAddStep(stepType) {
+    if (!workflowId) {
+      setSaveError(
+        "Create the workflow before adding steps."
+      );
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setSaveError("");
+
+      const currentSteps =
+        workflow?.workflow_steps || [];
+
+      const stepDefinition =
+        stepTypes.find(
+          (item) => item.type === stepType
+        );
+
+      if (!stepDefinition) {
+        throw new Error(
+          `Unknown step type: ${stepType}`
+        );
+      }
+
+      /*
+       * Position is simply the next available
+       * position in the workflow.
+       */
+      const position =
+        currentSteps.length;
+
+      /*
+       * Give the step a readable name.
+       *
+       * Example:
+       * AI
+       * HTTP
+       * Condition
+       */
+      const stepName =
+        stepDefinition.name;
+
+      /*
+       * Create a sensible default config
+       * for the selected step.
+       */
+      const config =
+        getDefaultStepConfig(stepType);
+
+      const data =
+        await graphqlRequest(
+          CREATE_WORKFLOW_STEP,
+          {
+            workflowId,
+            name: stepName,
+            type: stepType,
+            position,
+            config,
+          }
+        );
+
+      const createdStep =
+        data?.insert_workflow_steps_one;
+
+      if (!createdStep?.id) {
+        throw new Error(
+          "Step was not created."
+        );
+      }
+
+      /*
+       * Reload workflow so the newly created
+       * step immediately appears in the canvas.
+       */
+      await loadWorkflow();
+
+      /*
+       * Select the newly created step.
+       */
+      setSelectedStep(createdStep);
+    } catch (err) {
+      console.error(
+        "Failed to add workflow step:",
+        err
+      );
+
+      setSaveError(
+        err.message ||
+          "Failed to add workflow step"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* --------------------------------------------------
+     Run workflow
   -------------------------------------------------- */
 
   async function handleRunWorkflow() {
@@ -269,29 +497,23 @@ function WorkflowBuilder() {
       setRunning(true);
       setRunError("");
 
-      const result = await runWorkflow(
-        workflowId,
-        {
-          customer_message:
-            customerMessage,
-        }
-      );
+      const result =
+        await runWorkflow(
+          workflowId,
+          {
+            customer_message:
+              customerMessage,
+          }
+        );
 
       console.log(
         "Workflow execution result:",
         result
       );
 
-      /*
-       * Backend returns:
-       *
-       * {
-       *   workflow_run_id: "...",
-       *   status: "paused"
-       * }
-       */
-
-      if (!result?.workflow_run_id) {
+      if (
+        !result?.workflow_run_id
+      ) {
         throw new Error(
           "Workflow started but no run ID was returned."
         );
@@ -316,17 +538,116 @@ function WorkflowBuilder() {
   }
 
   /* --------------------------------------------------
-     New workflow
-     
-     We are not creating the database record yet.
-     That requires a workflow INSERT mutation.
+     Create new workflow
+  -------------------------------------------------- */
+
+  async function handleCreateWorkflow() {
+    try {
+      setSaving(true);
+      setSaveError("");
+
+      /*
+       * Get the organization belonging to
+       * the current user.
+       */
+      const membershipData =
+        await graphqlRequest(
+          GET_MY_ORGANIZATION
+        );
+
+      const membership =
+        membershipData?.org_members?.[0];
+
+      if (!membership?.org_id) {
+        throw new Error(
+          "You are not a member of an organization."
+        );
+      }
+
+      /*
+       * Create workflow.
+       */
+      const workflowData =
+        await graphqlRequest(
+          CREATE_WORKFLOW,
+          {
+            orgId: membership.org_id,
+            name: newWorkflowName.trim(),
+            description:
+              newWorkflowDescription.trim() ||
+              null,
+          }
+        );
+
+      const createdWorkflow =
+        workflowData?.insert_workflows_one;
+
+      if (!createdWorkflow?.id) {
+        throw new Error(
+          "Workflow was not created."
+        );
+      }
+
+      /*
+       * Every workflow starts with an Input step.
+       */
+      const stepData =
+        await graphqlRequest(
+          CREATE_WORKFLOW_STEP,
+          {
+            workflowId:
+              createdWorkflow.id,
+            name: "Input",
+            type: "input",
+            position: 0,
+            config:
+              getDefaultStepConfig("input"),
+          }
+        );
+
+      if (
+        !stepData
+          ?.insert_workflow_steps_one
+          ?.id
+      ) {
+        throw new Error(
+          "Workflow created, but initial step could not be created."
+        );
+      }
+
+      /*
+       * Open the newly created workflow.
+       */
+      navigate(
+        `/workflows/${createdWorkflow.id}`
+      );
+    } catch (err) {
+      console.error(
+        "Failed to create workflow:",
+        err
+      );
+
+      setSaveError(
+        err.message ||
+          "Failed to create workflow"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* --------------------------------------------------
+     New workflow screen
   -------------------------------------------------- */
 
   if (isNew) {
     return (
-      <div className="builder-page">
+      <div className="workflow-builder-page">
+
         <div className="builder-header">
+
           <div className="builder-header-left">
+
             <button
               className="builder-back"
               onClick={() =>
@@ -345,24 +666,105 @@ function WorkflowBuilder() {
 
               <h1>New Workflow</h1>
             </div>
+
           </div>
+
         </div>
 
         <div className="builder-new-state">
+
           <div className="builder-new-icon">
             <FiGitBranch />
           </div>
 
-          <h2>Create a new workflow</h2>
+          <h2>
+            Create a new workflow
+          </h2>
 
-          <p>
-            The workflow builder UI is ready.
-            Database creation will be connected
-            next.
-          </p>
+          <div className="config-field">
+
+            <label>
+              Workflow name
+            </label>
+
+            <input
+              value={newWorkflowName}
+              onChange={(event) =>
+                setNewWorkflowName(
+                  event.target.value
+                )
+              }
+              placeholder="Enter workflow name"
+            />
+
+          </div>
+
+          <div className="config-field">
+
+            <label>
+              Description
+            </label>
+
+            <textarea
+              value={
+                newWorkflowDescription
+              }
+              onChange={(event) =>
+                setNewWorkflowDescription(
+                  event.target.value
+                )
+              }
+              placeholder="Describe what this workflow does"
+              rows="4"
+            />
+
+          </div>
+
+          {saveError && (
+            <div className="builder-run-error">
+
+              <FiAlertCircle />
+
+              <span>
+                {saveError}
+              </span>
+
+              <button
+                onClick={() =>
+                  setSaveError("")
+                }
+              >
+                ×
+              </button>
+
+            </div>
+          )}
 
           <button
             className="btn btn-primary"
+            onClick={
+              handleCreateWorkflow
+            }
+            disabled={
+              saving ||
+              !newWorkflowName.trim()
+            }
+          >
+            {saving ? (
+              <>
+                <FiLoader className="button-spinner" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <FiSave />
+                Create Workflow
+              </>
+            )}
+          </button>
+
+          <button
+            className="btn btn-secondary"
             onClick={() =>
               navigate("/workflows")
             }
@@ -370,7 +772,9 @@ function WorkflowBuilder() {
             <FiArrowLeft />
             Back to workflows
           </button>
+
         </div>
+
       </div>
     );
   }
@@ -381,15 +785,17 @@ function WorkflowBuilder() {
 
   if (loading) {
     return (
-      <div className="builder-page builder-state">
-        <FiLoader className="builder-loader" />
+      <div className="workflow-builder-page">
 
-        <h2>Loading workflow...</h2>
+        <h2>
+          Loading workflow...
+        </h2>
 
         <p>
           Fetching workflow configuration
           from PostgreSQL.
         </p>
+
       </div>
     );
   }
@@ -400,12 +806,11 @@ function WorkflowBuilder() {
 
   if (error) {
     return (
-      <div className="builder-page builder-state">
-        <div className="builder-error-icon">
-          <FiAlertCircle />
-        </div>
+      <div className="workflow-builder-page">
 
-        <h2>Failed to load workflow</h2>
+        <h2>
+          Failed to load workflow
+        </h2>
 
         <p>{error}</p>
 
@@ -415,6 +820,7 @@ function WorkflowBuilder() {
         >
           Try again
         </button>
+
       </div>
     );
   }
@@ -422,14 +828,19 @@ function WorkflowBuilder() {
   const steps =
     workflow?.workflow_steps || [];
 
+  /* --------------------------------------------------
+     Builder
+  -------------------------------------------------- */
+
   return (
-    <div className="builder-page">
+    <div className="workflow-builder-page">
 
       {/* --------------------------------------------------
           HEADER
       -------------------------------------------------- */}
 
       <div className="builder-header">
+
         <div className="builder-header-left">
 
           <button
@@ -442,33 +853,48 @@ function WorkflowBuilder() {
           </button>
 
           <div>
+
             <div className="builder-breadcrumb">
               Workflows
               <span>/</span>
               {workflow.name}
             </div>
 
-            <h1>{workflow.name}</h1>
+            <h1>
+              {workflow.name}
+            </h1>
+
           </div>
 
         </div>
 
         <div className="builder-header-actions">
 
-          <button className="btn btn-secondary">
+          <button
+            className="btn btn-secondary"
+            disabled
+          >
             <FiSettings />
             Settings
           </button>
 
-          <button className="btn btn-secondary">
+          <button
+            className="btn btn-secondary"
+            disabled
+          >
             <FiSave />
             Save
           </button>
 
           <button
             className="btn btn-primary"
-            onClick={handleRunWorkflow}
-            disabled={running}
+            onClick={
+              handleRunWorkflow
+            }
+            disabled={
+              running ||
+              saving
+            }
           >
             {running ? (
               <>
@@ -484,6 +910,7 @@ function WorkflowBuilder() {
           </button>
 
         </div>
+
       </div>
 
       {/* --------------------------------------------------
@@ -492,9 +919,12 @@ function WorkflowBuilder() {
 
       {runError && (
         <div className="builder-run-error">
+
           <FiAlertCircle />
 
-          <span>{runError}</span>
+          <span>
+            {runError}
+          </span>
 
           <button
             onClick={() =>
@@ -503,6 +933,31 @@ function WorkflowBuilder() {
           >
             ×
           </button>
+
+        </div>
+      )}
+
+      {/* --------------------------------------------------
+          STEP ERROR
+      -------------------------------------------------- */}
+
+      {saveError && (
+        <div className="builder-run-error">
+
+          <FiAlertCircle />
+
+          <span>
+            {saveError}
+          </span>
+
+          <button
+            onClick={() =>
+              setSaveError("")
+            }
+          >
+            ×
+          </button>
+
         </div>
       )}
 
@@ -519,31 +974,47 @@ function WorkflowBuilder() {
         <aside className="step-library">
 
           <div className="builder-panel-title">
+
             <div>
-              <h2>Step Library</h2>
+
+              <h2>
+                Step Library
+              </h2>
 
               <p>
                 Choose a step to add.
               </p>
+
             </div>
+
           </div>
 
           <div className="step-library-list">
 
             {stepTypes.map((item) => {
-              const Icon = item.icon;
+
+              const Icon =
+                item.icon;
 
               return (
                 <button
                   className="library-step"
                   key={item.type}
                   type="button"
+                  onClick={() =>
+                    handleAddStep(
+                      item.type
+                    )
+                  }
+                  disabled={saving}
                 >
+
                   <span className="library-step-icon">
                     <Icon />
                   </span>
 
                   <span>
+
                     <strong>
                       {item.name}
                     </strong>
@@ -551,11 +1022,18 @@ function WorkflowBuilder() {
                     <small>
                       {item.type}
                     </small>
+
                   </span>
 
-                  <FiPlus />
+                  {saving ? (
+                    <FiLoader className="button-spinner" />
+                  ) : (
+                    <FiPlus />
+                  )}
+
                 </button>
               );
+
             })}
 
           </div>
@@ -571,6 +1049,7 @@ function WorkflowBuilder() {
           <div className="canvas-toolbar">
 
             <div>
+
               <span className="canvas-status">
                 <span />
                 Active
@@ -582,11 +1061,14 @@ function WorkflowBuilder() {
                   ? "step"
                   : "steps"}
               </span>
+
             </div>
 
             <div className="canvas-toolbar-actions">
 
-              <button type="button">
+              <button
+                type="button"
+              >
                 <FiChevronDown />
                 Auto layout
               </button>
@@ -604,6 +1086,7 @@ function WorkflowBuilder() {
               </div>
 
               <div>
+
                 <h2>
                   {workflow.name}
                 </h2>
@@ -612,6 +1095,7 @@ function WorkflowBuilder() {
                   {workflow.description ||
                     "Workflow automation"}
                 </p>
+
               </div>
 
             </div>
@@ -620,6 +1104,7 @@ function WorkflowBuilder() {
 
               {steps.map(
                 (step, index) => (
+
                   <StepNode
                     key={step.id}
                     step={{
@@ -634,19 +1119,14 @@ function WorkflowBuilder() {
                       selectedStep?.id ===
                       step.id
                     }
-                    status={
-                      index < 4
-                        ? "completed"
-                        : index === 4
-                          ? "paused"
-                          : "pending"
-                    }
+                    status="pending"
                     onClick={() =>
                       setSelectedStep(
                         step
                       )
                     }
                   />
+
                 )
               )}
 
@@ -665,6 +1145,7 @@ function WorkflowBuilder() {
           <div className="builder-panel-title">
 
             <div>
+
               <h2>
                 Configuration
               </h2>
@@ -672,27 +1153,34 @@ function WorkflowBuilder() {
               <p>
                 Configure selected step.
               </p>
+
             </div>
 
           </div>
 
           {selectedStep ? (
+
             <div className="config-content">
 
               <div className="config-step-header">
 
                 <div className="config-step-icon">
+
                   {(() => {
+
                     const Icon =
                       getStepIcon(
                         selectedStep.type
                       );
 
                     return <Icon />;
+
                   })()}
+
                 </div>
 
                 <div>
+
                   <span>
                     Selected step
                   </span>
@@ -700,6 +1188,7 @@ function WorkflowBuilder() {
                   <strong>
                     {selectedStep.name}
                   </strong>
+
                 </div>
 
               </div>
@@ -714,7 +1203,8 @@ function WorkflowBuilder() {
 
                 <input
                   value={
-                    selectedStep.name || ""
+                    selectedStep.name ||
+                    ""
                   }
                   readOnly
                 />
@@ -728,9 +1218,11 @@ function WorkflowBuilder() {
                 </label>
 
                 <div className="config-select">
+
                   {selectedStep.type}
 
                   <FiChevronDown />
+
                 </div>
 
               </div>
@@ -751,10 +1243,12 @@ function WorkflowBuilder() {
 
               </div>
 
+              {/* HTTP configuration */}
+
               {selectedStep.type ===
                 "http_request" &&
-                selectedStep.config
-                  ?.url && (
+                selectedStep.config?.url && (
+
                   <div className="config-field">
 
                     <label>
@@ -770,12 +1264,13 @@ function WorkflowBuilder() {
                     />
 
                   </div>
+
                 )}
 
               {selectedStep.type ===
                 "http_request" &&
-                selectedStep.config
-                  ?.method && (
+                selectedStep.config?.method && (
+
                   <div className="config-field">
 
                     <label>
@@ -791,10 +1286,14 @@ function WorkflowBuilder() {
                     />
 
                   </div>
+
                 )}
+
+              {/* Condition configuration */}
 
               {selectedStep.type ===
                 "conditional_branch" && (
+
                 <div className="config-field">
 
                   <label>
@@ -802,6 +1301,7 @@ function WorkflowBuilder() {
                   </label>
 
                   <div className="condition-preview">
+
                     <strong>
                       {selectedStep
                         .config
@@ -824,9 +1324,90 @@ function WorkflowBuilder() {
                           ""
                       )}
                     </strong>
+
                   </div>
 
                 </div>
+
+              )}
+
+              {/* Notification configuration */}
+
+              {selectedStep.type ===
+                "notify" && (
+
+                <div className="config-field">
+
+                  <label>
+                    Channel
+                  </label>
+
+                  <input
+                    value={
+                      selectedStep
+                        .config
+                        ?.channel ||
+                      "console"
+                    }
+                    readOnly
+                  />
+
+                </div>
+
+              )}
+
+              {/* DB write information */}
+
+              {selectedStep.type ===
+                "db_write" && (
+
+                <div className="config-info">
+
+                  <FiDatabase />
+
+                  <div>
+
+                    <strong>
+                      Database output
+                    </strong>
+
+                    <span>
+                      The current workflow
+                      data will be saved
+                      to workflow_outputs.
+                    </span>
+
+                  </div>
+
+                </div>
+
+              )}
+
+              {/* Approval information */}
+
+              {selectedStep.type ===
+                "approval_gate" && (
+
+                <div className="config-info">
+
+                  <FiShield />
+
+                  <div>
+
+                    <strong>
+                      Human approval
+                    </strong>
+
+                    <span>
+                      Workflow execution
+                      pauses until the
+                      approval is completed.
+                    </span>
+
+                  </div>
+
+                </div>
+
               )}
 
               <div className="config-info">
@@ -834,6 +1415,7 @@ function WorkflowBuilder() {
                 <FiCheck />
 
                 <div>
+
                   <strong>
                     Step ready
                   </strong>
@@ -842,20 +1424,26 @@ function WorkflowBuilder() {
                     This step is configured
                     and ready for execution.
                   </span>
+
                 </div>
 
               </div>
 
             </div>
+
           ) : (
+
             <div className="config-empty">
+
               <FiGitBranch />
 
               <p>
-                Select a step to view its
-                configuration.
+                Select a step to view
+                its configuration.
               </p>
+
             </div>
+
           )}
 
         </aside>
@@ -869,14 +1457,16 @@ function WorkflowBuilder() {
       <div className="workflow-test-input">
 
         <div>
+
           <strong>
             Test workflow input
           </strong>
 
           <span>
-            This input is sent to the workflow
-            execution backend.
+            This input is sent to the
+            workflow execution backend.
           </span>
+
         </div>
 
         <input
