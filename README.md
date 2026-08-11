@@ -9,6 +9,8 @@ The project provides the foundation of a mini workflow-automation platform where
 - **Live Demo:** https://ai-workflow-builder-12.netlify.app
 - **GitHub:** https://github.com/NithinBrammesh/ai-workflow-builder
 - **Demo Video:** https://www.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
+- **Technical Write-up:** https://drive.google.com/file/d/1fUV-J3B1UiBu-EwEL-46M_b8P2PxllV3/view
+
 
 > Demo login credentials are provided privately with the assignment submission and are not stored in this repository.
 
