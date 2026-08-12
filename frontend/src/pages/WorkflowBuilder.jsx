@@ -531,57 +531,53 @@ async function handleDeleteStep(stepId) {
      Run workflow
   -------------------------------------------------- */
 
-  async function handleRunWorkflow() {
-    if (!workflowId) {
-      setRunError(
-        "Save the workflow before running it."
-      );
-      return;
-    }
+    async function handleRunWorkflow() {
+      if (!workflowId) {
+        setRunError(
+          "Save the workflow before running it."
+        );
+        return;
+      }
 
-    try {
-      setRunning(true);
-      setRunError("");
+      try {
+        setRunning(true);
+        setRunError("");
 
-      const result =
-        await runWorkflow(
+        const result = await runWorkflow(
           workflowId,
           {
-            customer_message:
-              customerMessage,
+            customer_message: workflow.description,
           }
         );
 
-      console.log(
-        "Workflow execution result:",
-        result
-      );
-
-      if (
-        !result?.workflow_run_id
-      ) {
-        throw new Error(
-          "Workflow started but no run ID was returned."
+        console.log(
+          "Workflow execution result:",
+          result
         );
+
+        if (!result?.workflow_run_id) {
+          throw new Error(
+            "Workflow started but no run ID was returned."
+          );
+        }
+
+        navigate(
+          `/workflows/${workflowId}/runs/${result.workflow_run_id}`
+        );
+      } catch (err) {
+        console.error(
+          "Workflow execution failed:",
+          err
+        );
+
+        setRunError(
+          err.message ||
+            "Failed to execute workflow"
+        );
+      } finally {
+        setRunning(false);
       }
-
-      navigate(
-        `/workflows/${workflowId}/runs/${result.workflow_run_id}`
-      );
-    } catch (err) {
-      console.error(
-        "Workflow execution failed:",
-        err
-      );
-
-      setRunError(
-        err.message ||
-          "Failed to execute workflow"
-      );
-    } finally {
-      setRunning(false);
     }
-  }
 
   /* --------------------------------------------------
      Create new workflow
