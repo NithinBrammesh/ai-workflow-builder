@@ -1,48 +1,97 @@
-// step.config example:
-// {
-//   "url": "https://api.example.com/customers/lookup",
-//   "method": "POST"
-// }
+// HTTP workflow step
 //
-// Retries once on failure.
-// The HTTP response is added to the existing workflow data
+// Makes an HTTP request to the configured URL.
+// Retries once if the request fails.
+//
+// The response is added to the existing workflow data
 // so previous step outputs are not lost.
 
 async function executeHttpStep(step, input) {
-  const url = step.config?.url;
+  let url = step.config?.url;
+  const method = (step.config?.method || "POST").toUpperCase();
 
-  console.log("[HTTP STEP DEBUG]", {
-    stepId: step.id,
-    stepName: step.name,
-    url,
-    method: step.config?.method,
-  });
-
-  const method = step.config?.method || "POST";
+  console.log("[HTTP STEP] Original URL:", url);
+  console.log("[HTTP STEP] METHOD:", method);
 
   if (!url) {
     throw new Error("http_request step is missing config.url");
+  }
+
+  // --------------------------------------------------
+  // Normalize URLs
+  // --------------------------------------------------
+  //
+  // Protect against URLs accidentally saved as Markdown:
+  //
+  // [https://example.com](https://example.com)
+  //
+  // Convert them back to:
+  //
+  // https://example.com
+  //
+
+  const markdownUrlMatch = url.match(
+    /^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/
+  );
+
+  if (markdownUrlMatch) {
+    url = markdownUrlMatch[2];
+  }
+
+  // Remove accidental whitespace
+  url = url.trim();
+
+  console.log("[HTTP STEP] Normalized URL:", url);
+
+  // Validate URL before attempting request
+  try {
+    new URL(url);
+  } catch {
+    throw new Error(`Invalid HTTP URL: ${url}`);
   }
 
   let lastError;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const response = await fetch(url, {
+      console.log(
+        `[HTTP STEP] Attempt ${attempt}: ${method} ${url}`
+      );
+
+      const requestOptions = {
         method,
         headers: {
-          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: method === "GET" ? undefined : JSON.stringify(input),
-      });
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      // Only send a request body for methods that normally
+      // support one.
+      if (
+        method !== "GET" &&
+        method !== "HEAD"
+      ) {
+        requestOptions.headers["Content-Type"] =
+          "application/json";
+
+        requestOptions.body = JSON.stringify(input || {});
       }
 
-      let responseData;
+      const response = await fetch(
+        url,
+        requestOptions
+      );
 
-      const contentType = response.headers.get("content-type") || "";
+      console.log(
+        `[HTTP STEP] Response status: ${response.status}`
+      );
+
+      // Read response body even when the status is an error.
+      // This makes debugging much easier.
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      let responseData;
 
       if (contentType.includes("application/json")) {
         responseData = await response.json();
@@ -50,23 +99,52 @@ async function executeHttpStep(step, input) {
         responseData = await response.text();
       }
 
-      // Preserve previous workflow data.
+      if (!response.ok) {
+        console.error(
+          "[HTTP STEP] Error response:",
+          responseData
+        );
+
+        throw new Error(
+          `HTTP ${response.status}${
+            response.statusText
+              ? ` ${response.statusText}`
+              : ""
+          }`
+        );
+      }
+
+      console.log(
+        "[HTTP STEP] Response received successfully"
+      );
+
       return {
         ...input,
         http_response: responseData,
       };
     } catch (err) {
+      console.error(
+        `[HTTP STEP] Attempt ${attempt} failed:`,
+        err.message
+      );
+
       lastError = err;
 
       if (attempt === 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000)
+        );
       }
     }
   }
 
   throw new Error(
-    `http_request failed after 2 attempts: ${lastError.message}`
+    `http_request failed after 2 attempts: ${
+      lastError?.message || "Unknown HTTP error"
+    }`
   );
 }
 
-module.exports = { executeHttpStep };
+module.exports = {
+  executeHttpStep,
+};

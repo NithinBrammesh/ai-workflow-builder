@@ -23,35 +23,59 @@ import nhost, {
 
 import "./WorkflowRun.css";
 
+// --------------------------------------------------
+// Step icons
+// --------------------------------------------------
+
 const STEP_ICONS = {
   input: FiPlay,
+
   ai: FiCpu,
   llm_call: FiCpu,
+
   http: FiGlobe,
   http_request: FiGlobe,
+
   condition: FiGitBranch,
   conditional_branch: FiGitBranch,
+
   approval: FiShield,
   approval_gate: FiShield,
+
   db_write: FiDatabase,
+
   notification: FiMessageCircle,
   notify: FiMessageCircle,
 };
 
+// --------------------------------------------------
+// Step labels
+// --------------------------------------------------
+
 const STEP_LABELS = {
   input: "Input",
+
   ai: "AI",
   llm_call: "AI",
+
   http: "HTTP Request",
   http_request: "HTTP Request",
+
   condition: "Condition",
   conditional_branch: "Condition",
+
   approval: "Approval",
   approval_gate: "Approval",
+
   db_write: "Database",
+
   notification: "Notification",
   notify: "Notification",
 };
+
+// --------------------------------------------------
+// Format step type
+// --------------------------------------------------
 
 function formatStepType(type) {
   return (
@@ -60,6 +84,10 @@ function formatStepType(type) {
     "Step"
   );
 }
+
+// --------------------------------------------------
+// Format date
+// --------------------------------------------------
 
 function formatDate(date) {
   if (!date) {
@@ -71,6 +99,10 @@ function formatDate(date) {
     timeStyle: "short",
   });
 }
+
+// --------------------------------------------------
+// Status label
+// --------------------------------------------------
 
 function getStatusLabel(status) {
   switch (status) {
@@ -91,29 +123,395 @@ function getStatusLabel(status) {
   }
 }
 
+// --------------------------------------------------
+// Convert boolean to Yes / No
+// --------------------------------------------------
+
+function yesNo(value) {
+  if (value === true) {
+    return "Yes";
+  }
+
+  if (value === false) {
+    return "No";
+  }
+
+  return "—";
+}
+
+// --------------------------------------------------
+// Get useful information for each completed step
+// --------------------------------------------------
+
+function getStepDescription(step, stepRun) {
+  const output = stepRun?.output || {};
+  const input = stepRun?.input || {};
+
+  switch (step.type) {
+    // ------------------------------------------------
+    // INPUT
+    // ------------------------------------------------
+
+    case "input":
+      return {
+        title: "Customer request received",
+
+        details: (
+          <>
+            <div>
+              <strong>Purpose:</strong>{" "}
+              Accept incoming customer request.
+            </div>
+
+            {output.customer_message && (
+              <div>
+                <strong>Customer message:</strong>{" "}
+                {output.customer_message}
+              </div>
+            )}
+
+            {!output.customer_message &&
+              input.customer_message && (
+                <div>
+                  <strong>Customer message:</strong>{" "}
+                  {input.customer_message}
+                </div>
+              )}
+          </>
+        ),
+      };
+
+    // ------------------------------------------------
+    // AI
+    // ------------------------------------------------
+
+    case "ai":
+    case "llm_call": {
+      const analysis =
+        output.ai_analysis || output;
+
+      return {
+        title: "AI analyzed the customer request",
+
+        details: (
+          <>
+            {analysis.category && (
+              <div>
+                <strong>Category:</strong>{" "}
+                {analysis.category}
+              </div>
+            )}
+
+            {typeof analysis.confidence ===
+              "number" && (
+              <div>
+                <strong>Confidence:</strong>{" "}
+                {Math.round(
+                  analysis.confidence * 100
+                )}
+                %
+              </div>
+            )}
+
+            {Array.isArray(
+              analysis.requirements
+            ) &&
+              analysis.requirements.length >
+                0 && (
+                <div>
+                  <strong>
+                    Requirements:
+                  </strong>{" "}
+                  {analysis.requirements.join(
+                    ", "
+                  )}
+                </div>
+              )}
+
+            {typeof analysis.cost_required ===
+              "boolean" && (
+              <div>
+                <strong>
+                  Cost required:
+                </strong>{" "}
+                {yesNo(
+                  analysis.cost_required
+                )}
+              </div>
+            )}
+
+            {typeof analysis.timeline_required ===
+              "boolean" && (
+              <div>
+                <strong>
+                  Timeline required:
+                </strong>{" "}
+                {yesNo(
+                  analysis.timeline_required
+                )}
+              </div>
+            )}
+
+            {analysis._stubbed === true && (
+              <div>
+                <strong>Mode:</strong>{" "}
+                Demo / Stub AI
+              </div>
+            )}
+
+            {analysis._stubbed === false && (
+              <div>
+                <strong>Mode:</strong>{" "}
+                Groq AI
+              </div>
+            )}
+
+            {!analysis.category &&
+              !analysis.requirements && (
+                <div>
+                  AI analysis completed.
+                </div>
+              )}
+          </>
+        ),
+      };
+    }
+
+    // ------------------------------------------------
+    // HTTP
+    // ------------------------------------------------
+
+    case "http":
+    case "http_request": {
+      const response =
+        output.http_response;
+
+      let statusText = "Response received";
+
+      if (response) {
+        statusText = "200 OK";
+      }
+
+      return {
+        title: "External API request completed",
+
+        details: (
+          <>
+            <div>
+              <strong>Method:</strong>{" "}
+              {step.config?.method ||
+                "POST"}
+            </div>
+
+            <div>
+              <strong>URL:</strong>{" "}
+              {step.config?.url ||
+                "External API"}
+            </div>
+
+            <div>
+              <strong>Status:</strong>{" "}
+              {statusText}
+            </div>
+          </>
+        ),
+      };
+    }
+
+    // ------------------------------------------------
+    // CONDITION
+    // ------------------------------------------------
+
+    case "condition":
+    case "conditional_branch": {
+      let branch = "unknown";
+
+      if (output._branch === "true") {
+        branch = "true";
+      }
+
+      if (output._branch === "false") {
+        branch = "false";
+      }
+
+      const field =
+        step.config?.field || "field";
+
+      const operator =
+        step.config?.operator ||
+        "equals";
+
+      const expected =
+        step.config?.value;
+
+      return {
+        title: "Condition evaluated",
+
+        details: (
+          <>
+            <div>
+              <strong>Condition:</strong>{" "}
+              {field} {operator}{" "}
+              {String(expected)}
+            </div>
+
+            <div>
+              <strong>Result:</strong>{" "}
+              {branch === "true"
+                ? "true"
+                : branch === "false"
+                ? "false"
+                : "Not available"}
+            </div>
+
+            {branch === "true" && (
+              <div>
+                <strong>Selected branch:</strong>{" "}
+                True
+              </div>
+            )}
+
+            {branch === "false" && (
+              <div>
+                <strong>Selected branch:</strong>{" "}
+                False
+              </div>
+            )}
+          </>
+        ),
+      };
+    }
+
+    // ------------------------------------------------
+    // APPROVAL
+    // ------------------------------------------------
+
+    case "approval":
+    case "approval_gate":
+      return {
+        title: "Human approval completed",
+
+        details: (
+          <>
+            <div>
+              <strong>Status:</strong>{" "}
+              Approved
+            </div>
+
+            <div>
+              <strong>Approved by:</strong>{" "}
+              Authorized user
+            </div>
+          </>
+        ),
+      };
+
+    // ------------------------------------------------
+    // DATABASE
+    // ------------------------------------------------
+
+    case "db_write":
+      return {
+        title:
+          "Workflow result saved to database",
+
+        details: (
+          <>
+            <div>
+              <strong>Database:</strong>{" "}
+              {output.db_write?.saved
+                ? "Saved successfully"
+                : "Write completed"}
+            </div>
+
+            {output.db_write?.id && (
+              <div>
+                <strong>Output ID:</strong>{" "}
+                {output.db_write.id}
+              </div>
+            )}
+          </>
+        ),
+      };
+
+    // ------------------------------------------------
+    // NOTIFICATION
+    // ------------------------------------------------
+
+    case "notification":
+    case "notify":
+      return {
+        title: "Notification sent",
+
+        details: (
+          <>
+            <div>
+              <strong>Channel:</strong>{" "}
+              {output.channel ||
+                step.config?.channel ||
+                "console"}
+            </div>
+
+            <div>
+              <strong>Status:</strong>{" "}
+              {output.notified
+                ? "Sent"
+                : "Completed"}
+            </div>
+          </>
+        ),
+      };
+
+    // ------------------------------------------------
+    // DEFAULT
+    // ------------------------------------------------
+
+    default:
+      return {
+        title: "Step completed",
+
+        details:
+          "Step completed successfully.",
+      };
+  }
+}
+
+// ==================================================
+// WORKFLOW RUN COMPONENT
+// ==================================================
+
 function WorkflowRun() {
   const navigate = useNavigate();
 
-  const { workflowId, runId } = useParams();
+  const {
+    workflowId,
+    runId,
+  } = useParams();
 
-  const [workflow, setWorkflow] = useState(null);
+  const [workflow, setWorkflow] =
+    useState(null);
+
   const [run, setRun] = useState(null);
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [starting, setStarting] = useState(false);
-  const [approving, setApproving] = useState(false);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  const [error, setError] = useState("");
+  const [starting, setStarting] =
+    useState(false);
 
-  /*
-   * --------------------------------------------------
-   * Load workflow + run information
-   * --------------------------------------------------
-   *
-   * This uses the authenticated GraphQL client.
-   */
+  const [approving, setApproving] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  // ==================================================
+  // Load workflow run
+  // ==================================================
+
   const loadRun = async () => {
     try {
       setError("");
@@ -162,36 +560,45 @@ function WorkflowRun() {
         }
       `;
 
-      const response = await nhost.graphql.request({
-        query,
-        variables: {
-          runId,
-        },
-      });
+      const response =
+        await nhost.graphql.request({
+          query,
+          variables: {
+            runId,
+          },
+        });
 
       if (response.body?.errors?.length) {
         throw new Error(
           response.body.errors
-            .map((item) => item.message)
+            .map(
+              (item) => item.message
+            )
             .join(", ")
         );
       }
 
       const data =
-        response.body?.data?.workflow_runs_by_pk;
+        response.body?.data
+          ?.workflow_runs_by_pk;
 
       if (!data) {
-        throw new Error("Workflow run not found");
+        throw new Error(
+          "Workflow run not found"
+        );
       }
 
       setRun(data);
       setWorkflow(data.workflow);
-
     } catch (err) {
-      console.error("Failed to load workflow run:", err);
+      console.error(
+        "Failed to load workflow run:",
+        err
+      );
 
       setError(
-        err.message || "Unable to load workflow run"
+        err.message ||
+          "Unable to load workflow run"
       );
     } finally {
       setLoading(false);
@@ -199,76 +606,70 @@ function WorkflowRun() {
     }
   };
 
-  /*
-   * Load run when page opens.
-   */
+  // ==================================================
+  // Load existing run
+  // ==================================================
+
   useEffect(() => {
     if (runId) {
       loadRun();
     }
   }, [runId]);
 
-  /*
-   * --------------------------------------------------
-   * Start a new workflow
-   * --------------------------------------------------
-   *
-   * This is used when the page is opened without
-   * an existing runId.
-   */
-  const handleStartWorkflow = async () => {
-    try {
-      setStarting(true);
-      setError("");
+  // ==================================================
+  // Start workflow
+  // ==================================================
 
-      const result = await runWorkflow(
-        workflowId,
-        {
-          customer_message:
-            "I need help with my order",
+  const handleStartWorkflow =
+    async () => {
+      try {
+        setStarting(true);
+        setError("");
+
+        const result =
+          await runWorkflow(
+            workflowId,
+            {
+              customer_message:
+                "I need help with my order",
+            }
+          );
+
+        if (
+          result?.workflow_run_id
+        ) {
+          navigate(
+            `/workflows/${workflowId}/runs/${result.workflow_run_id}`,
+            {
+              replace: true,
+            }
+          );
+
+          return;
         }
-      );
 
-      /*
-       * Backend returns:
-       *
-       * {
-       *   workflow_run_id: "...",
-       *   status: "paused"
-       * }
-       */
-
-      if (result?.workflow_run_id) {
-        navigate(
-          `/workflows/${workflowId}/runs/${result.workflow_run_id}`,
-          { replace: true }
+        throw new Error(
+          "Workflow started but no run ID was returned"
         );
+      } catch (err) {
+        console.error(err);
 
-        return;
+        setError(
+          err.message ||
+            "Unable to start workflow"
+        );
+      } finally {
+        setStarting(false);
       }
+    };
 
-      throw new Error(
-        "Workflow started but no run ID was returned"
-      );
+  // ==================================================
+  // Approve paused step
+  // ==================================================
 
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message ||
-          "Unable to start workflow"
-      );
-    } finally {
-      setStarting(false);
-    }
-  };
-
-  /*
-   * --------------------------------------------------
-   * Approve paused step
-   * --------------------------------------------------
-   */
-  const handleApprove = async (stepRunId) => {
+  const handleApprove = async (
+    stepRunId
+  ) => {
     if (!stepRunId) {
       setError(
         "Approval step run ID is missing"
@@ -282,21 +683,16 @@ function WorkflowRun() {
       setError("");
 
       const result =
-        await approveStep(stepRunId);
+        await approveStep(
+          stepRunId
+        );
 
       console.log(
         "Approval result:",
         result
       );
 
-      /*
-       * Backend resumes the workflow.
-       *
-       * Reload the run so the UI reflects
-       * the actual database state.
-       */
       await loadRun();
-
     } catch (err) {
       console.error(
         "Approval failed:",
@@ -312,51 +708,52 @@ function WorkflowRun() {
     }
   };
 
-  /*
-   * --------------------------------------------------
-   * Refresh
-   * --------------------------------------------------
-   */
+  // ==================================================
+  // Refresh
+  // ==================================================
+
   const handleRefresh = async () => {
     setRefreshing(true);
 
     await loadRun();
   };
 
-  /*
-   * --------------------------------------------------
-   * Loading state
-   * --------------------------------------------------
-   */
+  // ==================================================
+  // Loading
+  // ==================================================
+
   if (loading) {
     return (
       <div className="run-page">
         <div className="run-loading">
           <FiRefreshCw className="spin" />
 
-          <h2>Loading workflow run...</h2>
+          <h2>
+            Loading workflow run...
+          </h2>
 
           <p>
-            Fetching the latest execution status.
+            Fetching the latest
+            execution status.
           </p>
         </div>
       </div>
     );
   }
 
-  /*
-   * --------------------------------------------------
-   * Error state
-   * --------------------------------------------------
-   */
+  // ==================================================
+  // Error
+  // ==================================================
+
   if (error && !run) {
     return (
       <div className="run-page">
         <div className="run-error-page">
-
           <FiAlertCircle />
 
-          <h2>Unable to load workflow run</h2>
+          <h2>
+            Unable to load workflow run
+          </h2>
 
           <p>{error}</p>
 
@@ -365,42 +762,50 @@ function WorkflowRun() {
             onClick={handleRefresh}
           >
             <FiRefreshCw />
+
             Try again
           </button>
-
         </div>
       </div>
     );
   }
 
-  /*
-   * --------------------------------------------------
-   * Existing run
-   * --------------------------------------------------
-   */
+  // ==================================================
+  // Existing run data
+  // ==================================================
 
-  const steps = workflow?.workflow_steps || [];
+  const steps =
+    workflow?.workflow_steps || [];
 
-  const stepRuns = run?.step_runs || [];
+  const stepRuns =
+    run?.step_runs || [];
 
-  const completedCount = stepRuns.filter(
-    (stepRun) =>
-      stepRun.status === "completed"
-  ).length;
+  const completedCount =
+    stepRuns.filter(
+      (stepRun) =>
+        stepRun.status ===
+        "completed"
+    ).length;
 
-  const pausedStepRun = stepRuns.find(
-    (stepRun) =>
-      stepRun.status === "paused"
-  );
+  const pausedStepRun =
+    stepRuns.find(
+      (stepRun) =>
+        stepRun.status === "paused"
+    );
 
-  const status = run?.status || "unknown";
+  const status =
+    run?.status || "unknown";
+
+  // ==================================================
+  // Render
+  // ==================================================
 
   return (
     <div className="run-page">
 
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
       {/* HEADER */}
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
 
       <div className="run-page-header">
 
@@ -418,20 +823,18 @@ function WorkflowRun() {
           </button>
 
           <div>
-
             <div className="run-breadcrumb">
-
               {workflow?.name ||
                 "Workflow"}
 
               <span>/</span>
 
               Run
-
             </div>
 
-            <h1>Workflow Run</h1>
-
+            <h1>
+              Workflow Run
+            </h1>
           </div>
 
         </div>
@@ -459,35 +862,37 @@ function WorkflowRun() {
           >
             <span className="status-dot" />
 
-            {getStatusLabel(status)}
+            {getStatusLabel(
+              status
+            )}
           </span>
 
         </div>
 
       </div>
 
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
       {/* ERROR */}
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
 
       {error && (
         <div className="run-inline-error">
-
           <FiAlertCircle />
 
           <span>{error}</span>
-
         </div>
       )}
 
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
       {/* SUMMARY */}
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
 
       <div className="run-summary">
 
         <div>
-          <span>Workflow</span>
+          <span>
+            Workflow
+          </span>
 
           <strong>
             {workflow?.name ||
@@ -496,7 +901,9 @@ function WorkflowRun() {
         </div>
 
         <div>
-          <span>Started</span>
+          <span>
+            Started
+          </span>
 
           <strong>
             {formatDate(
@@ -506,33 +913,40 @@ function WorkflowRun() {
         </div>
 
         <div>
-          <span>Steps</span>
+          <span>
+            Steps
+          </span>
 
           <strong>
-            {completedCount} / {steps.length}
+            {completedCount} /{" "}
+            {steps.length}
           </strong>
         </div>
 
         <div>
-          <span>Execution</span>
+          <span>
+            Execution
+          </span>
 
           <strong>
             {status === "paused"
               ? "Waiting for approval"
-              : getStatusLabel(status)}
+              : getStatusLabel(
+                  status
+                )}
           </strong>
         </div>
 
       </div>
 
-      {/* -------------------------------------------- */}
-      {/* MAIN CONTENT */}
-      {/* -------------------------------------------- */}
+      {/* ============================================ */}
+      {/* MAIN */}
+      {/* ============================================ */}
 
       <div className="run-layout">
 
         {/* ========================================== */}
-        {/* TIMELINE */}
+        {/* EXECUTION TIMELINE */}
         {/* ========================================== */}
 
         <section className="execution-panel">
@@ -546,7 +960,9 @@ function WorkflowRun() {
               </h2>
 
               <p>
-                {completedCount} of {steps.length} steps completed
+                {completedCount} of{" "}
+                {steps.length} steps
+                completed
               </p>
 
             </div>
@@ -555,6 +971,7 @@ function WorkflowRun() {
 
               <span className="live-indicator">
                 <span />
+
                 Live
               </span>
 
@@ -579,8 +996,9 @@ function WorkflowRun() {
                   "pending";
 
                 const Icon =
-                  STEP_ICONS[step.type] ||
-                  FiPlay;
+                  STEP_ICONS[
+                    step.type
+                  ] || FiPlay;
 
                 return (
                   <div
@@ -588,7 +1006,9 @@ function WorkflowRun() {
                     key={step.id}
                   >
 
-                    {/* Timeline connector */}
+                    {/* ================================= */}
+                    {/* TIMELINE LINE */}
+                    {/* ================================= */}
 
                     <div className="timeline-line">
 
@@ -599,7 +1019,9 @@ function WorkflowRun() {
 
                     </div>
 
-                    {/* Icon */}
+                    {/* ================================= */}
+                    {/* ICON */}
+                    {/* ================================= */}
 
                     <div className="execution-icon">
 
@@ -615,7 +1037,9 @@ function WorkflowRun() {
 
                     </div>
 
-                    {/* Content */}
+                    {/* ================================= */}
+                    {/* CONTENT */}
+                    {/* ================================= */}
 
                     <div className="execution-step-content">
 
@@ -645,23 +1069,47 @@ function WorkflowRun() {
 
                       </div>
 
-                      {/* Completed */}
+                      {/* ================================= */}
+                      {/* COMPLETED STEP */}
+                      {/* ================================= */}
 
                       {stepStatus ===
-                        "completed" && (
-                        <div className="execution-result">
+                        "completed" &&
+                        (() => {
+                          const stepInfo =
+                            getStepDescription(
+                              step,
+                              stepRun
+                            );
 
-                          <FiCheck />
+                          return (
+                            <div className="execution-result step-result">
 
-                          <span>
-                            Step completed
-                            successfully
-                          </span>
+                              <FiCheck />
 
-                        </div>
-                      )}
+                              <div className="step-result-content">
 
-                      {/* Running */}
+                                <strong>
+                                  {
+                                    stepInfo.title
+                                  }
+                                </strong>
+
+                                <div className="step-result-details">
+                                  {
+                                    stepInfo.details
+                                  }
+                                </div>
+
+                              </div>
+
+                            </div>
+                          );
+                        })()}
+
+                      {/* ================================= */}
+                      {/* RUNNING */}
+                      {/* ================================= */}
 
                       {stepStatus ===
                         "running" && (
@@ -670,14 +1118,17 @@ function WorkflowRun() {
                           <FiRefreshCw className="spin" />
 
                           <span>
-                            Step is currently
+                            Step is
+                            currently
                             executing...
                           </span>
 
                         </div>
                       )}
 
-                      {/* Failed */}
+                      {/* ================================= */}
+                      {/* FAILED */}
+                      {/* ================================= */}
 
                       {stepStatus ===
                         "failed" && (
@@ -693,7 +1144,9 @@ function WorkflowRun() {
                         </div>
                       )}
 
-                      {/* Approval */}
+                      {/* ================================= */}
+                      {/* APPROVAL */}
+                      {/* ================================= */}
 
                       {stepStatus ===
                         "paused" && (
@@ -706,16 +1159,18 @@ function WorkflowRun() {
                           <div className="approval-box-content">
 
                             <strong>
-                              Manager approval
+                              Manager
+                              approval
                               required
                             </strong>
 
                             <p>
-                              This workflow is
-                              paused until an
-                              authorized user
-                              approves this
-                              step.
+                              This workflow
+                              is paused
+                              until an
+                              authorized
+                              user approves
+                              this step.
                             </p>
 
                             <button
@@ -752,7 +1207,9 @@ function WorkflowRun() {
                         </div>
                       )}
 
-                      {/* Pending */}
+                      {/* ================================= */}
+                      {/* PENDING */}
+                      {/* ================================= */}
 
                       {stepStatus ===
                         "pending" && (
@@ -761,8 +1218,8 @@ function WorkflowRun() {
                           <FiClock />
 
                           <span>
-                            Waiting for previous
-                            step
+                            Waiting for
+                            previous step
                           </span>
 
                         </div>
@@ -785,11 +1242,15 @@ function WorkflowRun() {
 
         <aside className="run-side-panel">
 
+          {/* ======================================== */}
           {/* INPUT */}
+          {/* ======================================== */}
 
           <div className="run-side-section">
 
-            <h2>Input</h2>
+            <h2>
+              Input
+            </h2>
 
             <pre className="json-box">
               {JSON.stringify(
@@ -801,12 +1262,16 @@ function WorkflowRun() {
 
           </div>
 
+          {/* ======================================== */}
           {/* OUTPUT */}
+          {/* ======================================== */}
 
           {run?.output && (
             <div className="run-side-section">
 
-              <h2>Output</h2>
+              <h2>
+                Output
+              </h2>
 
               <pre className="json-box">
                 {JSON.stringify(
@@ -819,47 +1284,57 @@ function WorkflowRun() {
             </div>
           )}
 
+          {/* ======================================== */}
           {/* RUN INFORMATION */}
+          {/* ======================================== */}
 
           <div className="run-side-section">
 
-            <h2>Run information</h2>
+            <h2>
+              Run information
+            </h2>
 
             <div className="run-info-list">
 
-              <div>
+              <div className="run-info-row">
 
-                <span>Run ID</span>
+                <span>
+                  Run ID
+                </span>
 
-                <strong>
-                  {run?.id
-                    ? `${run.id.slice(
-                        0,
-                        8
-                      )}...`
-                    : "—"}
+                <strong
+                  title={
+                    run?.id || ""
+                  }
+                >
+                  {run?.id || "—"}
                 </strong>
 
               </div>
 
-              <div>
+              <div className="run-info-row">
 
-                <span>Organization</span>
+                <span>
+                  Organization
+                </span>
 
-                <strong>
-                  {workflow?.org_id
-                    ? `${workflow.org_id.slice(
-                        0,
-                        8
-                      )}...`
-                    : "—"}
+                <strong
+                  title={
+                    workflow?.org_id ||
+                    ""
+                  }
+                >
+                  {workflow?.org_id ||
+                    "—"}
                 </strong>
 
               </div>
 
-              <div>
+              <div className="run-info-row">
 
-                <span>Triggered by</span>
+                <span>
+                  Triggered by
+                </span>
 
                 <strong>
                   Authenticated user
@@ -867,13 +1342,16 @@ function WorkflowRun() {
 
               </div>
 
-              <div>
+              <div className="run-info-row">
 
-                <span>Current state</span>
+                <span>
+                  Current state
+                </span>
 
                 <strong
                   className={
-                    status === "paused"
+                    status ===
+                    "paused"
                       ? "warning-text"
                       : ""
                   }
@@ -889,33 +1367,65 @@ function WorkflowRun() {
 
           </div>
 
-          {/* APPROVAL NOTICE */}
+          {/* ======================================== */}
+          {/* COMPLETED NOTICE */}
+          {/* ======================================== */}
 
-          {status === "paused" && (
+          {status ===
+            "completed" &&
+            completedCount ===
+              steps.length && (
+              <div className="run-notice run-notice-success">
+
+                <FiCheck />
+
+                <p>
+                  All{" "}
+                  {steps.length}{" "}
+                  workflow steps
+                  completed
+                  successfully.
+                </p>
+
+              </div>
+            )}
+
+          {/* ======================================== */}
+          {/* APPROVAL NOTICE */}
+          {/* ======================================== */}
+
+          {status ===
+            "paused" && (
             <div className="run-notice">
 
               <FiAlertCircle />
 
               <p>
-                Workflow execution is
-                paused safely. An authorized
-                user can approve the pending
-                step to resume execution.
+                Workflow execution
+                is paused safely.
+                An authorized user
+                can approve the
+                pending step to
+                resume execution.
               </p>
 
             </div>
           )}
 
+          {/* ======================================== */}
           {/* FAILED NOTICE */}
+          {/* ======================================== */}
 
-          {status === "failed" && (
+          {status ===
+            "failed" && (
             <div className="run-notice run-notice-error">
 
               <FiAlertCircle />
 
               <p>
-                This workflow run failed.
-                Check the failed step for
+                This workflow run
+                failed. Check the
+                failed step for
                 details.
               </p>
 
