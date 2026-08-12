@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   FiFilter,
   FiGitBranch,
@@ -14,20 +13,23 @@ import { graphqlRequest } from "../nhost";
 import "./Workflows.css";
 
 const GET_WORKFLOWS = `
-query GetWorkflows {
-  workflows(
-    order_by: { updated_at: desc }
-  ) {
-    id
-    name
-    description
-    org_id
-    created_by
-    created_at
-    updated_at
+  query GetWorkflows {
+    workflows(order_by: { updated_at: desc }) {
+      id
+      name
+      description
+      org_id
+      created_by  
+      created_at
+      updated_at
+
+      workflow_steps {
+        id
+      }
+    }
   }
-}
 `;
+
 function Workflows() {
   const navigate = useNavigate();
 
@@ -51,13 +53,11 @@ function Workflows() {
         (workflow) => ({
           ...workflow,
 
-          steps: workflow.workflow_steps?.length || 0,
-
+          steps:
+             workflow.workflow_steps?.length || 0,
           status: "Active",
 
-          updated: formatUpdatedTime(
-            workflow.updated_at
-          ),
+          updated: formatUpdatedTime(workflow.updated_at),
         })
       );
 
@@ -81,40 +81,34 @@ function Workflows() {
     }
 
     return workflows.filter((workflow) =>
-      workflow.name
-        ?.toLowerCase()
-        .includes(query)
+      workflow.name?.toLowerCase().includes(query)
     );
   }, [workflows, search]);
 
   return (
     <div className="page-container workflows-page">
-
+      {/* Page Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">
-            Workflows
-          </h1>
+          <h1 className="page-title">Workflows</h1>
 
           <p className="page-description">
-            Build, manage and execute your AI-powered
-            workflows.
+            Build, manage and execute your AI-powered workflows.
           </p>
         </div>
 
         <button
+          type="button"
           className="btn btn-primary"
-          onClick={() =>
-            navigate("/workflows/new")
-          }
+          onClick={() => navigate("/workflows/new")}
         >
           <FiPlus />
-          New Workflow
+          <span>New Workflow</span>
         </button>
       </div>
 
+      {/* Toolbar */}
       <div className="workflow-toolbar">
-
         <div className="workflow-search">
           <FiSearch />
 
@@ -128,46 +122,42 @@ function Workflows() {
           />
         </div>
 
-        <button className="filter-button">
+        <button
+          type="button"
+          className="filter-button"
+        >
           <FiFilter />
-          Filter
+          <span>Filter</span>
         </button>
-
       </div>
 
+      {/* Summary */}
       <div className="workflow-summary">
-
         <div className="workflow-summary-title">
           <FiGitBranch />
 
-          <strong>
-            All workflows
-          </strong>
+          <strong>All workflows</strong>
 
-          <span>
-            {filteredWorkflows.length}
-          </span>
+          <span>{filteredWorkflows.length}</span>
         </div>
-
       </div>
 
+      {/* Loading */}
       {loading && (
         <div className="workflow-empty-state">
           Loading workflows...
         </div>
       )}
 
+      {/* Error */}
       {!loading && error && (
         <div className="workflow-empty-state workflow-error">
-          <strong>
-            Failed to load workflows
-          </strong>
+          <strong>Failed to load workflows</strong>
 
-          <p>
-            {error}
-          </p>
+          <p>{error}</p>
 
           <button
+            type="button"
             className="btn btn-primary"
             onClick={loadWorkflows}
           >
@@ -176,13 +166,12 @@ function Workflows() {
         </div>
       )}
 
+      {/* Empty */}
       {!loading &&
         !error &&
         filteredWorkflows.length === 0 && (
           <div className="workflow-empty-state">
-            <strong>
-              No workflows found
-            </strong>
+            <strong>No workflows found</strong>
 
             <p>
               Create a workflow or change your search.
@@ -190,22 +179,20 @@ function Workflows() {
           </div>
         )}
 
+      {/* Workflow Grid */}
       {!loading &&
         !error &&
         filteredWorkflows.length > 0 && (
           <div className="workflow-grid">
-            {filteredWorkflows.map(
-              (workflow) => (
-                <WorkflowCard
-                  key={workflow.id}
-                  workflow={workflow}
-                  onRun={loadWorkflows}
-                />
-              )
-            )}
+            {filteredWorkflows.map((workflow) => (
+              <WorkflowCard
+                key={workflow.id}
+                workflow={workflow}
+                onRun={loadWorkflows}
+              />
+            ))}
           </div>
         )}
-
     </div>
   );
 }
@@ -221,15 +208,11 @@ function formatUpdatedTime(dateString) {
     return "Recently";
   }
 
-  const diff =
-    Date.now() - date.getTime();
-
-  const minutes = Math.floor(
-    diff / 60000
-  );
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
 
   if (minutes < 1) {
-    return "just now";
+    return "Just now";
   }
 
   if (minutes < 60) {
@@ -238,9 +221,7 @@ function formatUpdatedTime(dateString) {
     } ago`;
   }
 
-  const hours = Math.floor(
-    minutes / 60
-  );
+  const hours = Math.floor(minutes / 60);
 
   if (hours < 24) {
     return `${hours} hour${
@@ -248,9 +229,7 @@ function formatUpdatedTime(dateString) {
     } ago`;
   }
 
-  const days = Math.floor(
-    hours / 24
-  );
+  const days = Math.floor(hours / 24);
 
   if (days === 1) {
     return "Yesterday";

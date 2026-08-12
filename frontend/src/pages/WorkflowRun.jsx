@@ -546,7 +546,7 @@ function WorkflowRun() {
               </h2>
 
               <p>
-                Live status of each workflow step.
+                {completedCount} of {steps.length} steps completed
               </p>
 
             </div>

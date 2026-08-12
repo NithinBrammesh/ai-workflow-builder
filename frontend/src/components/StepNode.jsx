@@ -8,6 +8,7 @@ import {
   FiPlay,
   FiShield,
   FiCpu,
+  FiTrash2,
 } from "react-icons/fi";
 
 import "./StepNode.css";
@@ -92,19 +93,42 @@ function StepNode({
   status = "pending",
   selected = false,
   onClick,
+  onDelete,
 }) {
   const config =
     STEP_CONFIG[step.type] || STEP_CONFIG.input;
 
   const Icon = config.icon;
 
+  function handleDelete(event) {
+    event.stopPropagation();
+
+    if (
+      window.confirm(
+        `Delete "${step.name}" from this workflow?`
+      )
+    ) {
+      onDelete?.(step.id);
+    }
+  }
+
   return (
     <div className="step-node-wrapper">
-      <button
+      <div
         className={`step-node ${
           selected ? "selected" : ""
         }`}
         onClick={onClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            onClick?.();
+          }
+        }}
       >
         <div className="step-node-number">
           {index + 1}
@@ -128,15 +152,30 @@ function StepNode({
 
         <div className={`step-node-status ${status}`}>
           {status === "completed" && <FiCheck />}
+
           {status === "running" && (
             <span className="status-spinner" />
           )}
-          {status === "paused" && (
-            <FiShield />
+
+          {status === "paused" && <FiShield />}
+
+          {status === "failed" && (
+            <span>!</span>
           )}
-          {status === "failed" && <span>!</span>}
         </div>
-      </button>
+
+        {step.type !== "input" && (
+          <button
+            type="button"
+            className="step-node-delete"
+            title="Delete step"
+            aria-label={`Delete ${step.name}`}
+            onClick={handleDelete}
+          >
+            <FiTrash2 />
+          </button>
+        )}
+      </div>
 
       {step.description && (
         <div className="step-node-description">

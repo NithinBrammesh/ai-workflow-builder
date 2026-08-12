@@ -23,6 +23,7 @@ import StepNode from "../components/StepNode";
 import {
   graphqlRequest,
   runWorkflow,
+  getCurrentUser,
 } from "../nhost";
 
 import "./WorkflowBuilder.css";
@@ -269,26 +270,40 @@ function WorkflowBuilder() {
      Create workflow
   -------------------------------------------------- */
 
-  const CREATE_WORKFLOW = `
-    mutation CreateWorkflow(
-      $orgId: uuid!
-      $name: String!
-      $description: String
-    ) {
-      insert_workflows_one(
-        object: {
-          org_id: $orgId
-          name: $name
-          description: $description
-        }
-      ) {
-        id
-        name
-        description
-        org_id
+const CREATE_WORKFLOW = `
+  mutation CreateWorkflow(
+    $orgId: uuid!
+    $createdBy: uuid!
+    $name: String!
+    $description: String
+  ) {
+    insert_workflows_one(
+      object: {
+        org_id: $orgId
+        created_by: $createdBy
+        name: $name
+        description: $description
       }
+    ) {
+      id
+      name
+      description
+      org_id
+      created_by
     }
-  `;
+  }
+`;
+
+
+const DELETE_WORKFLOW_STEP = `
+  mutation DeleteWorkflowStep($stepId: uuid!) {
+    delete_workflow_steps_by_pk(id: $stepId) {
+      id
+    }
+  }
+`;
+
+  
 
   /* --------------------------------------------------
      Create workflow step
@@ -383,6 +398,40 @@ function WorkflowBuilder() {
   /* --------------------------------------------------
      Add a new step to the workflow
   -------------------------------------------------- */
+
+
+async function handleDeleteStep(stepId) {
+  try {
+    setSaving(true);
+    setSaveError("");
+
+    await graphqlRequest(
+      DELETE_WORKFLOW_STEP,
+      {
+        stepId,
+      }
+    );
+
+    await loadWorkflow();
+
+    setSelectedStep(null);
+  } catch (err) {
+    console.error(
+      "Failed to delete workflow step:",
+      err
+    );
+
+    setSaveError(
+      err.message ||
+        "Failed to delete workflow step"
+    );
+  } finally {
+    setSaving(false);
+  }
+}
+
+
+
 
   async function handleAddStep(stepType) {
     if (!workflowId) {
@@ -567,17 +616,18 @@ function WorkflowBuilder() {
       /*
        * Create workflow.
        */
-      const workflowData =
-        await graphqlRequest(
-          CREATE_WORKFLOW,
-          {
-            orgId: membership.org_id,
-            name: newWorkflowName.trim(),
-            description:
-              newWorkflowDescription.trim() ||
-              null,
-          }
-        );
+    const workflowData =
+      await graphqlRequest(
+        CREATE_WORKFLOW,
+        {
+          orgId: membership.org_id,
+          createdBy: currentUser.id,
+          name: newWorkflowName.trim(),
+          description:
+            newWorkflowDescription.trim() ||
+            null,
+        }
+      );
 
       const createdWorkflow =
         workflowData?.insert_workflows_one;
@@ -616,11 +666,10 @@ function WorkflowBuilder() {
       }
 
       /*
-       * Open the newly created workflow.
-       */
-      navigate(
-        `/workflows/${createdWorkflow.id}`
-      );
+      * Return to the workflow list after creation.
+      */
+      navigate("/workflows");
+
     } catch (err) {
       console.error(
         "Failed to create workflow:",
@@ -634,6 +683,14 @@ function WorkflowBuilder() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const currentUser = getCurrentUser();
+
+  if (!currentUser?.id) {
+    throw new Error(
+      "You must be logged in to create a workflow."
+    );
   }
 
   /* --------------------------------------------------
@@ -1105,27 +1162,18 @@ function WorkflowBuilder() {
               {steps.map(
                 (step, index) => (
 
-                  <StepNode
-                    key={step.id}
-                    step={{
-                      ...step,
-                      description:
-                        getStepDescription(
-                          step
-                        ),
-                    }}
-                    index={index}
-                    selected={
-                      selectedStep?.id ===
-                      step.id
-                    }
-                    status="pending"
-                    onClick={() =>
-                      setSelectedStep(
-                        step
-                      )
-                    }
-                  />
+                <StepNode
+                  key={step.id}
+                  step={{
+                    ...step,
+                    description: getStepDescription(step),
+                  }}
+                  index={index}
+                  selected={selectedStep?.id === step.id}
+                  status="pending"
+                  onClick={() => setSelectedStep(step)}
+                  onDelete={handleDeleteStep}
+                />
 
                 )
               )}

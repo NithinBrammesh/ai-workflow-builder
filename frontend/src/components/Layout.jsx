@@ -6,7 +6,6 @@ import {
 
 import {
   FiBell,
-  FiChevronDown,
   FiGitBranch,
   FiHome,
   FiLogOut,
@@ -70,11 +69,8 @@ function Layout() {
 
   return (
     <div className="app-shell">
-
       <aside className="sidebar">
-
         <div className="sidebar-brand">
-
           <div className="brand-icon">
             <FiZap />
           </div>
@@ -88,7 +84,6 @@ function Layout() {
               AI Workflow Builder
             </div>
           </div>
-
         </div>
 
         <div className="sidebar-section-label">
@@ -96,7 +91,6 @@ function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-
           {navigation.map((item) => (
             <NavLink
               key={item.path}
@@ -114,11 +108,9 @@ function Layout() {
               <span>{item.label}</span>
             </NavLink>
           ))}
-
         </nav>
 
         <div className="sidebar-create">
-
           <button
             className="sidebar-create-button"
             onClick={() =>
@@ -131,11 +123,9 @@ function Layout() {
               New Workflow
             </span>
           </button>
-
         </div>
 
         <div className="sidebar-bottom">
-
           <NavLink
             to="/dashboard"
             className="nav-item"
@@ -157,19 +147,14 @@ function Layout() {
 
             <span>Sign out</span>
           </button>
-
         </div>
-
       </aside>
 
       <div className="main-area">
-
         <header className="topbar">
-
           <div className="topbar-left">
-
             <span className="topbar-label">
-              Organization
+              Workspace
             </span>
 
             <span className="topbar-divider">
@@ -177,20 +162,15 @@ function Layout() {
             </span>
 
             <span className="topbar-current">
-              Acme Support
+              Workflow Builder
             </span>
-
-            <FiChevronDown
-              className="topbar-chevron"
-            />
-
           </div>
 
           <div className="topbar-right">
-
             <button
               className="icon-button"
               title="Notifications"
+              type="button"
             >
               <FiBell />
 
@@ -198,39 +178,27 @@ function Layout() {
             </button>
 
             <div className="user-menu">
-
               <div className="user-avatar">
                 {initials}
               </div>
 
               <div className="user-info">
-
                 <span className="user-name">
                   {displayName}
                 </span>
 
                 <span className="user-role">
-                  {user?.email || "User"}
+                  {user?.email || "Authenticated user"}
                 </span>
-
               </div>
-
-              <FiChevronDown
-                className="user-chevron"
-              />
-
             </div>
-
           </div>
-
         </header>
 
         <main className="main-content">
           <Outlet />
         </main>
-
       </div>
-
     </div>
   );
 }

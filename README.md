@@ -7,6 +7,8 @@ The project provides the foundation of a mini workflow-automation platform where
 ## Links
 
 - **Live Demo:** https://ai-workflow-builder-12.netlify.app
+- **Live Login Email:** brammeshnithin@gmail.com
+- **Live Login Password:** Password@123
 - **GitHub:** https://github.com/NithinBrammesh/ai-workflow-builder
 - **Demo Video:** https://www.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
 - **Technical Write-up:** https://drive.google.com/file/d/1fUV-J3B1UiBu-EwEL-46M_b8P2PxllV3/view
