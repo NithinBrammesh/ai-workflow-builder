@@ -10,6 +10,14 @@
 
 async function executeHttpStep(step, input) {
   const url = step.config?.url;
+
+  console.log("[HTTP STEP DEBUG]", {
+    stepId: step.id,
+    stepName: step.name,
+    url,
+    method: step.config?.method,
+  });
+
   const method = step.config?.method || "POST";
 
   if (!url) {
