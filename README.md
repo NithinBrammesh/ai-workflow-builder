@@ -169,7 +169,7 @@ Example:
 
 ```json
 {
-  "url": "https://jsonplaceholder.typicode.com/posts/1",
+  "url": "https://dummyjson.com/test",
   "method": "GET"
 }
 ```
