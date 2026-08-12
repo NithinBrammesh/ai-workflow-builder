@@ -146,7 +146,7 @@
 
   color: #1e293b;
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -232,7 +232,7 @@
 .library-step strong {
   color: #334155;
 
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 650;
 }
 
@@ -241,7 +241,7 @@
 
   color: #94a3b8;
 
-  font-size: 9px;
+  font-size: 12px;
 
   white-space: nowrap;
   overflow: hidden;
@@ -407,16 +407,16 @@
 
   color: #1e293b;
 
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .canvas-title p {
   margin: 0;
 
-  color: #94a3b8;
+  color: #2a303c;
 
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
 }
 

@@ -5,9 +5,12 @@ const { executeWorkflow } = require("./workflow-execution/executor/workflowExecu
 async function run() {
   const workflowId = "2c29989c-1556-4eda-aeb1-816417c6b9ce";
 
-  const input = {
-    customer_message: "I need help with my order"
-  };
+
+  const result = await executeWorkflow(
+    workflowId,
+    {},
+    userId
+  );
 
   // IMPORTANT:
   // Replace this with the UUID of the Nhost user

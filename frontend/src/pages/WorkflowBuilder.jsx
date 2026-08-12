@@ -140,7 +140,7 @@ function getStepDescription(step) {
 
   switch (step.type) {
     case "input":
-      return "Accept incoming customer request.";
+      return "Receive a new customer software development enquiry.";
 
     case "ai":
       return "Classify request using AI.";
@@ -173,7 +173,7 @@ function getDefaultStepConfig(type) {
   switch (type) {
     case "input":
       return {
-        description: "Accept incoming customer request.",
+        description: "Receive a new customer software development enquiry.",
       };
 
     case "ai":
@@ -247,9 +247,6 @@ function WorkflowBuilder() {
       "AI-powered customer support workflow."
     );
 
-  const [customerMessage, setCustomerMessage] = useState(
-    "I need help with my order"
-  );
 
   const isNew = !workflowId;
 
@@ -1517,7 +1514,7 @@ async function handleDeleteStep(stepId) {
 
         </div>
 
-        <input
+        {/* <input
           value={customerMessage}
           onChange={(event) =>
             setCustomerMessage(
@@ -1525,7 +1522,7 @@ async function handleDeleteStep(stepId) {
             )
           }
           placeholder="Enter customer request..."
-        />
+        /> */}
 
       </div>
 

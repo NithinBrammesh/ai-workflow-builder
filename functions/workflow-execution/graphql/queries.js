@@ -1,21 +1,22 @@
 const GET_WORKFLOW_WITH_STEPS = `
-  query GetWorkflowWithSteps($workflowId: uuid!) {
-    workflows_by_pk(id: $workflowId) {
+query GetWorkflowWithSteps($workflowId: uuid!) {
+  workflows_by_pk(id: $workflowId) {
+    id
+    name
+    description
+    org_id
+
+    workflow_steps(
+      order_by: { position: asc }
+    ) {
       id
       name
-      org_id
-
-      workflow_steps(
-        order_by: { position: asc }
-      ) {
-        id
-        name
-        type
-        position
-        config
-      }
+      type
+      position
+      config
     }
   }
+}
 `;
 
 const GET_MEMBERSHIP = `

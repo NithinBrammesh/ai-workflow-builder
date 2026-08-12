@@ -24,7 +24,8 @@ const { executeStep } = require("./stepExecutor");
 // --------------------------------------------------
 
 async function executeWorkflow(workflowId, input, userId) {
-  // 1. Load workflow and ordered steps
+
+
   const workflow = await getWorkflow(workflowId);
 
   // 2. Check organization membership + role
@@ -33,10 +34,31 @@ async function executeWorkflow(workflowId, input, userId) {
   // 3. Check organization quota
   await assertQuotaAvailable(workflow.org_id);
 
-  // 4. Create workflow run
-  const run = await createWorkflowRun(workflowId, input);
+  // --------------------------------------------------
+  // Workflow description is the customer enquiry
+  // for this assignment/demo.
+  // --------------------------------------------------
 
-  let currentData = input;
+  const customerMessage = workflow.description?.trim();
+
+  if (!customerMessage) {
+    throw new Error(
+      "Workflow description is required because it is used as the customer enquiry."
+    );
+  }
+
+  const runtimeInput = {
+    customer_message: customerMessage,
+  };
+
+  // 4. Create workflow run
+  const run = await createWorkflowRun(
+    workflowId,
+    runtimeInput
+  );
+
+  let currentData = runtimeInput;
+
 
   // Current conditional branch.
   // null = no branch selected yet.
