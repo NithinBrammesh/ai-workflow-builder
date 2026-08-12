@@ -184,7 +184,7 @@ function getDefaultStepConfig(type) {
     case "http_request":
       return {
         description: "Retrieve additional information from an API.",
-        url: "https://jsonplaceholder.typicode.com/posts/1",
+        url: "https://httpbin.org/get",
         method: "GET",
       };
 
