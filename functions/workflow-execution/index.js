@@ -15,11 +15,16 @@ module.exports = async (req, res) => {
   // CORS
   // --------------------------------------------------
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
+
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-hasura-role"
   );
+
   res.setHeader(
     "Access-Control-Allow-Methods",
     "POST, OPTIONS"
@@ -28,7 +33,6 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
-
 
 
   if (req.method !== "POST") {
