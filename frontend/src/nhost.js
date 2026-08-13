@@ -38,6 +38,10 @@ export async function signIn(email, password) {
     throw new Error("Login succeeded but no session was returned.");
   }
 
+
+  console.log("LOGIN SESSION:", response.body?.session);
+  console.log("LOGIN USER:", response.body?.session?.user);
+
   return response.body.session;
 }
 
