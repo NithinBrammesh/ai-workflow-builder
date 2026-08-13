@@ -24,8 +24,21 @@ const { executeStep } = require("./stepExecutor");
 // --------------------------------------------------
 
 async function executeWorkflow(workflowId, input, userId) {
+  // Make sure workflowId is a string before sending it
+  // to GraphQL.
+  if (typeof workflowId !== "string") {
+    throw new Error(
+      `Invalid workflowId: expected string, received ${typeof workflowId}`
+    );
+  }
 
+  console.log("========== WORKFLOW EXECUTION ==========");
+  console.log("workflowId:", workflowId);
+  console.log("workflowId type:", typeof workflowId);
+  console.log("userId:", userId);
+  console.log("========================================");
 
+  // 1. Load workflow
   const workflow = await getWorkflow(workflowId);
 
   // 2. Check organization membership + role
@@ -59,7 +72,6 @@ async function executeWorkflow(workflowId, input, userId) {
 
   let currentData = runtimeInput;
 
-
   // Current conditional branch.
   // null = no branch selected yet.
   // "true" / "false" = active branch.
@@ -69,23 +81,6 @@ async function executeWorkflow(workflowId, input, userId) {
   for (const step of workflow.workflow_steps) {
     // --------------------------------------------------
     // Conditional branch filtering
-    // --------------------------------------------------
-    //
-    // Example:
-    //
-    // condition step returns:
-    // {
-    //   ...input,
-    //   _branch: "true"
-    // }
-    //
-    // Following steps can have:
-    //
-    // config: { "branch": "true" }
-    // config: { "branch": "false" }
-    //
-    // Only the matching branch is executed.
-    // Steps without config.branch always execute.
     // --------------------------------------------------
 
     const configuredBranch = step.config?.branch;
@@ -120,10 +115,9 @@ async function executeWorkflow(workflowId, input, userId) {
       // Execute current step
       // --------------------------------------------------
 
-    output = await executeStep(step, currentData, {
-      workflowRunId: run.id,
-    });
-    
+      output = await executeStep(step, currentData, {
+        workflowRunId: run.id,
+      });
     } catch (error) {
       // --------------------------------------------------
       // Step failed
@@ -151,12 +145,11 @@ async function executeWorkflow(workflowId, input, userId) {
     // --------------------------------------------------
     // Approval gate
     // --------------------------------------------------
-    //
+
     // approval_gate returns:
     // { __pause: true, data: input }
     //
     // The step remains paused and the whole workflow pauses.
-    // --------------------------------------------------
 
     if (output && output.__pause) {
       await pauseStepRun(stepRun.id);
@@ -241,40 +234,21 @@ async function executeWorkflow(workflowId, input, userId) {
 // Load workflow
 // --------------------------------------------------
 
-  async function getWorkflow(workflowId) {
-    console.log("========== GET WORKFLOW DEBUG ==========");
-    console.log("workflowId:", workflowId);
-    console.log("workflowId type:", typeof workflowId);
-    console.log(
-      "workflowId is string:",
-      typeof workflowId === "string"
+async function getWorkflow(workflowId) {
+  console.log("========== GET WORKFLOW DEBUG ==========");
+  console.log("workflowId:", workflowId);
+  console.log("workflowId type:", typeof workflowId);
+  console.log(
+    "workflowId is string:",
+    typeof workflowId === "string"
+  );
+  console.log("========================================");
+
+  if (typeof workflowId !== "string") {
+    throw new Error(
+      `Invalid workflowId: expected string, received ${typeof workflowId}`
     );
-    console.log("========================================");
-
-    const data = await graphqlRequest(
-      GET_WORKFLOW_WITH_STEPS,
-      {
-        workflowId,
-      }
-    );
-
-    const workflow = data.workflows_by_pk;
-
-    if (!workflow) {
-      throw new Error(
-        `Workflow ${workflowId} not found`
-      );
-    }
-
-    if (!workflow.workflow_steps.length) {
-      throw new Error("Workflow has no steps");
-    }
-
-    return workflow;
   }
-
-
-
 
   const data = await graphqlRequest(
     GET_WORKFLOW_WITH_STEPS,
@@ -291,7 +265,10 @@ async function executeWorkflow(workflowId, input, userId) {
     );
   }
 
-  if (!workflow.workflow_steps.length) {
+  if (
+    !workflow.workflow_steps ||
+    !workflow.workflow_steps.length
+  ) {
     throw new Error(
       "Workflow has no steps"
     );
