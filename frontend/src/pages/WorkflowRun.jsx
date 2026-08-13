@@ -582,11 +582,30 @@ function WorkflowRun() {
         response.body?.data
           ?.workflow_runs_by_pk;
 
+      console.log("========== WORKFLOW RUN DEBUG ==========");
+      console.log("RUN DATA:", data);
+      console.log("RUN STATUS:", data?.status);
+      console.log(
+        "WORKFLOW STEPS:",
+        data?.workflow?.workflow_steps
+      );
+      console.log("STEP RUNS:", data?.step_runs);
+      console.log(
+        "PAUSED STEP RUNS:",
+        data?.step_runs?.filter(
+          (stepRun) => stepRun.status === "paused"
+        )
+      );
+      console.log("========================================");
+
       if (!data) {
         throw new Error(
           "Workflow run not found"
         );
       }
+
+      setRun(data);
+      setWorkflow(data.workflow);
 
       setRun(data);
       setWorkflow(data.workflow);
