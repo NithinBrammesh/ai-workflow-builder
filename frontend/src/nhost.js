@@ -282,6 +282,19 @@ export async function runWorkflow(
       getApplicationRole(user)
     );
 
+    console.log("========== RUN WORKFLOW DEBUG ==========");
+    console.log("workflowId:", workflowId);
+    console.log("workflowId type:", typeof workflowId);
+    console.log(
+      "workflowId is string:",
+      typeof workflowId === "string"
+    );
+    console.log("workflow request body:", {
+      workflow_id: workflowId,
+      input,
+    });
+    console.log("========================================");
+
     const response = await nhost.functions.post(
       "/workflow-execution",
       {
