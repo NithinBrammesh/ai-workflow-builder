@@ -241,7 +241,41 @@ async function executeWorkflow(workflowId, input, userId) {
 // Load workflow
 // --------------------------------------------------
 
-async function getWorkflow(workflowId) {
+  async function getWorkflow(workflowId) {
+    console.log("========== GET WORKFLOW DEBUG ==========");
+    console.log("workflowId:", workflowId);
+    console.log("workflowId type:", typeof workflowId);
+    console.log(
+      "workflowId is string:",
+      typeof workflowId === "string"
+    );
+    console.log("========================================");
+
+    const data = await graphqlRequest(
+      GET_WORKFLOW_WITH_STEPS,
+      {
+        workflowId,
+      }
+    );
+
+    const workflow = data.workflows_by_pk;
+
+    if (!workflow) {
+      throw new Error(
+        `Workflow ${workflowId} not found`
+      );
+    }
+
+    if (!workflow.workflow_steps.length) {
+      throw new Error("Workflow has no steps");
+    }
+
+    return workflow;
+  }
+
+
+
+
   const data = await graphqlRequest(
     GET_WORKFLOW_WITH_STEPS,
     {

@@ -1,21 +1,19 @@
 require("dotenv").config();
 
-const { executeWorkflow } = require("./workflow-execution/executor/workflowExecutor");
+const {
+  executeWorkflow,
+} = require("./workflow-execution/executor/workflowExecutor");
 
 async function run() {
-  const workflowId = "2c29989c-1556-4eda-aeb1-816417c6b9ce";
+  const workflowId =
+    "2c29989c-1556-4eda-aeb1-816417c6b9ce";
 
+  // Use the UUID of an actual Nhost user
+  // who belongs to this workflow's organization.
+  const userId =
+    "ed937524-be6a-439e-b4ad-9423a1850c2d";
 
-  const result = await executeWorkflow(
-    workflowId,
-    {},
-    userId
-  );
-
-  // IMPORTANT:
-  // Replace this with the UUID of the Nhost user
-  // who is a member of the workflow's organization.
-  const userId = "28d60e3f-962f-4ca8-8987-76cefdef3ca5";
+  const input = {};
 
   try {
     const result = await executeWorkflow(
@@ -28,7 +26,7 @@ async function run() {
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
     console.error("WORKFLOW FAILED:");
-    console.error(error.message);
+    console.error(error);
   }
 }
 
