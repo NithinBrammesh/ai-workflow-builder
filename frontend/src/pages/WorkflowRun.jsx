@@ -568,6 +568,42 @@ function WorkflowRun() {
           },
         });
 
+console.log("========== RAW GRAPHQL RESPONSE ==========");
+
+console.log(
+  "GRAPHQL DATA JSON:",
+  JSON.stringify(response.body?.data, null, 2)
+);
+
+console.log(
+  "WORKFLOW JSON:",
+  JSON.stringify(
+    response.body?.data?.workflow_runs_by_pk?.workflow,
+    null,
+    2
+  )
+);
+
+console.log(
+  "WORKFLOW STEPS DIRECT:",
+  JSON.stringify(
+    response.body?.data?.workflow_runs_by_pk?.workflow?.workflow_steps,
+    null,
+    2
+  )
+);
+
+console.log(
+  "WORKFLOW RUN JSON:",
+  JSON.stringify(
+    response.body?.data?.workflow_runs_by_pk,
+    null,
+    2
+  )
+);
+
+console.log("==========================================");
+
       if (response.body?.errors?.length) {
         throw new Error(
           response.body.errors
@@ -604,8 +640,7 @@ function WorkflowRun() {
         );
       }
 
-      setRun(data);
-      setWorkflow(data.workflow);
+     
 
       setRun(data);
       setWorkflow(data.workflow);
