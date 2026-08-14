@@ -1,9 +1,108 @@
-import { createClient } from "@nhost/nhost-js";
+import { createClient as createNhostClient } from "@nhost/nhost-js";
+import { createClient as createGraphQLWSClient } from "graphql-ws";
 
-const nhost = createClient({
+
+const nhost = createNhostClient({
   subdomain: "vqvguejhcipfweukqyfu",
   region: "ap-south-1",
 });
+
+const graphqlHttpUrl =
+  "https://vqvguejhcipfweukqyfu.graphql.ap-south-1.nhost.run/v1/graphql";
+
+console.log(
+  "NHOST GRAPHQL HTTP URL:",
+  nhost.graphql.httpUrl
+);
+
+console.log(
+  "NHOST GRAPHQL WS URL:",
+  nhost.graphql.wsUrl
+);
+
+console.log(
+  "GRAPHQL HTTP URL:",
+  graphqlHttpUrl
+);
+
+const graphqlWsUrl = nhost.graphql.url
+  .replace(/^https:/, "wss:")
+  .replace(/^http:/, "ws:");
+
+console.log("NHOST GRAPHQL HTTP URL:", nhost.graphql.url);
+console.log("NHOST GRAPHQL WS URL:", graphqlWsUrl);
+
+const graphqlWsClient = createGraphQLWSClient({
+  url: graphqlWsUrl,
+  connectionParams: async () => {
+    const session = nhost.getUserSession();
+
+    if (!session?.accessToken) {
+      console.error(
+        "GRAPHQL WS: No Nhost access token available"
+      );
+
+      return {};
+    }
+
+    const user = session.user;
+    const role = getApplicationRole(user);
+
+    console.log(
+      "GRAPHQL WS CONNECT:",
+      user?.email,
+      role
+    );
+
+    return {
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        "x-hasura-role": role,
+      },
+    };
+  },
+
+  retryAttempts: 5,
+
+  shouldRetry: () => true,
+
+  on: {
+    connecting: () => {
+      console.log("GRAPHQL WS CONNECTING");
+    },
+
+    opened: () => {
+      console.log("GRAPHQL WS OPENED");
+    },
+
+    connected: () => {
+      console.log("GRAPHQL WS CONNECTED");
+    },
+
+    closed: (event) => {
+      console.log(
+        "GRAPHQL WS CLOSED:",
+        event
+      );
+    },
+
+    error: (error) => {
+      console.error(
+        "GRAPHQL WS ERROR:",
+        error
+      );
+    },
+
+    message: (message) => {
+      console.log(
+        "GRAPHQL WS MESSAGE:",
+        message
+      );
+    },
+  },
+});
+
+
 
 /*
  * --------------------------------------------------
@@ -65,6 +164,89 @@ function getApplicationRole(user) {
 
   return "user";
 }
+
+
+
+export function subscribeToWorkflowRun(
+  runId,
+  onData,
+  onError
+) {
+  const query = `
+    subscription WatchWorkflowRun($runId: uuid!) {
+      workflow_runs_by_pk(id: $runId) {
+        id
+        workflow_id
+        status
+        input
+        output
+        error
+        started_at
+        completed_at
+
+        step_runs(
+          order_by: { started_at: asc }
+        ) {
+          id
+          workflow_step_id
+          status
+          input
+          output
+          error
+          started_at
+          completed_at
+        }
+      }
+    }
+  `;
+
+  console.log(
+    "SUBSCRIBING TO WORKFLOW RUN:",
+    runId
+  );
+
+  return graphqlWsClient.subscribe(
+    {
+      query,
+      variables: {
+        runId,
+      },
+    },
+    {
+      next: (result) => {
+        console.log(
+          "WORKFLOW RUN LIVE UPDATE:",
+          result
+        );
+
+        const workflowRun =
+          result?.data?.workflow_runs_by_pk;
+
+        if (workflowRun) {
+          onData(workflowRun);
+        }
+      },
+
+      error: (error) => {
+        console.error(
+          "WORKFLOW RUN SUBSCRIPTION ERROR:",
+          error
+        );
+
+        if (onError) {
+          onError(error);
+        }
+      },
+
+      complete: () => {
+        console.log(
+          "WORKFLOW RUN SUBSCRIPTION COMPLETED"
+        );
+      },
+    }
+  );
+}
+
 
 /*
  * --------------------------------------------------

@@ -121,9 +121,24 @@ async function stubAnalyze(input) {
   // Determine category
   // ----------------------------------------------
 
+// ----------------------------------------------
+// Determine category
+// ----------------------------------------------
+
   let category = "general";
 
+  // Order-related enquiry
   if (
+    message.includes("order") ||
+    message.includes("purchase") ||
+    message.includes("buy") ||
+    message.includes("product")
+  ) {
+    category = "order";
+  }
+
+  // Software-development enquiry
+  else if (
     requirements.length > 0 ||
     message.includes("software") ||
     message.includes("application") ||

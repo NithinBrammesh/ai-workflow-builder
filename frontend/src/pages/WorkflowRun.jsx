@@ -19,6 +19,7 @@ import {
 import nhost, {
   approveStep,
   runWorkflow,
+  subscribeToWorkflowRun,
 } from "../nhost";
 
 import "./WorkflowRun.css";
@@ -664,11 +665,67 @@ console.log("==========================================");
   // Load existing run
   // ==================================================
 
-  useEffect(() => {
-    if (runId) {
-      loadRun();
+useEffect(() => {
+  if (!runId) {
+    return;
+  }
+
+  let unsubscribe;
+
+  async function startLiveUpdates() {
+    try {
+      // Load the current run immediately.
+      await loadRun();
+
+      console.log(
+        "Starting live subscription for run:",
+        runId
+      );
+
+      // Subscribe to future changes.
+      unsubscribe = subscribeToWorkflowRun(
+        runId,
+        (updatedRun) => {
+          console.log(
+            "LIVE WORKFLOW RUN UPDATE:",
+            updatedRun
+          );
+
+          setRun(updatedRun);
+         
+        },
+        (subscriptionError) => {
+          console.error(
+            "Workflow subscription error:",
+            subscriptionError
+          );
+
+          setError(
+            "Live updates disconnected. You can still use Refresh."
+          );
+        }
+      );
+    } catch (err) {
+      console.error(
+        "Failed to start live workflow updates:",
+        err
+      );
     }
-  }, [runId]);
+  }
+
+  startLiveUpdates();
+
+  return () => {
+    if (unsubscribe) {
+      console.log(
+        "Unsubscribing from workflow run:",
+        runId
+      );
+
+      unsubscribe();
+    }
+  };
+}, [runId]);
 
   // ==================================================
   // Start workflow
@@ -737,16 +794,15 @@ console.log("==========================================");
       setError("");
 
       const result =
-        await approveStep(
-          stepRunId
-        );
+    
+      await approveStep(stepRunId);
 
       console.log(
         "Approval result:",
         result
       );
 
-      await loadRun();
+
     } catch (err) {
       console.error(
         "Approval failed:",
