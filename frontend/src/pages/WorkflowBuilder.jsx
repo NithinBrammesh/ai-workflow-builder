@@ -17,6 +17,7 @@ import {
   FiShield,
   FiLoader,
   FiAlertCircle,
+  FiTrash2
 } from "react-icons/fi";
 
 import StepNode from "../components/StepNode";
@@ -237,6 +238,11 @@ function WorkflowBuilder() {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+  loadUserRole();
+  }, []);
 
   const [newWorkflowName, setNewWorkflowName] = useState(
     "Customer Support Workflow"
@@ -250,6 +256,66 @@ function WorkflowBuilder() {
 
   const isNew = !workflowId;
 
+
+
+  async function loadUserRole() {
+  try {
+    const data = await graphqlRequest(
+      GET_MY_ORGANIZATION
+    );
+
+    setUserRole(
+      data?.org_members?.[0]?.role || ""
+    );
+  } catch (err) {
+    console.error(
+      "Failed to load user role:",
+      err
+    );
+  }
+}
+
+
+
+  async function handleDeleteWorkflow() {
+    if (!workflowId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${workflow?.name}"?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setSaveError("");
+
+      await graphqlRequest(
+        DELETE_WORKFLOW,
+        {
+          id: workflowId,
+        }
+      );
+
+      navigate("/workflows");
+    } catch (err) {
+      console.error(
+        "Failed to delete workflow:",
+        err
+      );
+
+      setSaveError(
+        err.message ||
+          "Failed to delete workflow"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
   /* --------------------------------------------------
      Get current user's organization
   -------------------------------------------------- */
@@ -920,21 +986,19 @@ async function handleDeleteStep(stepId) {
 
         <div className="builder-header-actions">
 
-          <button
-            className="btn btn-secondary"
-            disabled
-          >
-            <FiSettings />
-            Settings
-          </button>
 
+
+          {userRole === "owner" && (
           <button
-            className="btn btn-secondary"
-            disabled
+            type="button"
+            className="btn btn-danger"
+            onClick={handleDeleteWorkflow}
+            disabled={saving || running}
           >
-            <FiSave />
-            Save
+            <FiTrash2 />
+            Delete
           </button>
+        )}
 
           <button
             className="btn btn-primary"
