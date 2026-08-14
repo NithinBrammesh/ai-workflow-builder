@@ -1,31 +1,31 @@
-# AI Workflow Builder
+**# AI Workflow Builder**
 
-A full-stack workflow automation platform built with **React, Nhost, Hasura, PostgreSQL, GraphQL, and Node.js/Nhost Functions**.
+A full-stack workflow automation platform built with **\*\*React, Nhost, Hasura, PostgreSQL, GraphQL, and Node.js/Nhost Functions\*\***.
 
 The project provides a mini workflow-automation platform where users can define ordered workflow steps and execute them through a server-side workflow engine.
 
----
+**---**
 
-## Links
+**## Links**
 
-- **Live Demo:** https://ai-workflow-builder-12.netlify.app
-- **GitHub:** https://github.com/NithinBrammesh/ai-workflow-builder
-- **Demo Video:** https://www.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
-- **Technical Write-up:** https://drive.google.com/file/d/1fUV-J3B1UiBu-EwEL-46M_b8P2PxllV3/view
+\- **\*\*Live Demo:\*\*** https\://ai-workflow-builder-12.netlify.app
+\- **\*\*GitHub:\*\*** https\://github.com/NithinBrammesh/ai-workflow-builder
+\- **\*\*Demo Video:\*\*** https\://www\.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
+\- **\*\*Technical Write-up:\*\*** https\://drive.google.com/file/d/1fUV-J3B1UiBu-EwEL-46M\_b8P2PxllV3/view
 
----
+**---**
 
-# Demo Login Credentials
+**# Demo Login Credentials
 
-> These accounts are provided for testing the deployed application.  
+> These accounts are provided for testing the deployed application.
 > All demo accounts currently use the same password: `Password@123`.
 
 | Role | Email | Password | Access |
 |---|---|---|---|
-| **Owner – Organization A** | `brammeshnithin@gmail.com` | `Password@123` | Full organization access |
+| **Owner – Organization B** | `brammeshnithin@gmail.com` | `Password@123` | Full organization access |
 | **Editor – Organization A** | `testuserb@gmail.com` | `Password@123` | Workflow access within Organization A |
 | **Viewer – Organization A** | `viewer@test.com` | `Password@123` | Read-only workflow access within Organization A |
-| **Owner – Organization B** | `owneruser@gmail.com` | `Password@123` | Full organization access |
+| **Owner – Organization A** | `owneruser@gmail.com` | `Password@123` | Full organization access |
 
 ### Organization Isolation Test Accounts
 
@@ -34,30 +34,58 @@ The project contains two organizations for testing authorization and cross-organ
 - **Organization A:** `AI Workflow Builder`
 - **Organization B:** `Test Organization B`
 
+The Organization A accounts are:
+
+```text
+Owner:
+Email: owneruser@gmail.com
+Password: Password@123
+Role: owner
+Organization: AI Workflow Builder
+
+Editor:
+Email: testuserb@gmail.com
+Password: Password@123
+Role: editor
+Organization: AI Workflow Builder
+
+Viewer:
+Email: viewer@test.com
+Password: Password@123
+Role: viewer
+Organization: AI Workflow Builder
+```
+
 The Organization B owner account is:
 
 ```text
-Email: owneruser@gmail.com
+Email: brammeshnithin@gmail.com
 Password: Password@123
 Role: owner
 Organization: Test Organization B
 ```
 
-The Organization A accounts are:
+The current organization/member configuration is:
 
 ```text
-Owner:
-Email: brammeshnithin@gmail.com
-Password: Password@123
+Organization A
+Name: AI Workflow Builder
+ID: 1b8a9323-bae0-47e2-8012-8f6bd3a534fd
 
-Editor:
-Email: testuserb@gmail.com
-Password: Password@123
+Members:
+- owneruser@gmail.com      → owner
+- testuserb@gmail.com      → editor
+- viewer@test.com          → viewer
 
-Viewer:
-Email: viewer@test.com
-Password: Password@123
+Organization B
+Name: Test Organization B
+ID: 7c4f8a2e-1c6b-4d93-9f20-123456789abc
+
+Members:
+- brammeshnithin@gmail.com → owner
 ```
+
+This setup provides a separate Organization B owner specifically for testing tenant isolation.
 
 ### Expected Role Behaviour
 
@@ -76,18 +104,18 @@ A user from one organization must not be able to fetch workflows belonging to an
 
 ---
 
-# Architecture
+# Architecture**
 
-```text
+\`\`\`text
                          React Frontend
                               |
                +--------------+--------------+
-               |                             |
+               \|                             |
         Nhost Authentication           Hasura GraphQL
-               |                             |
-               |                             v
-               |                        PostgreSQL
-               |                             |
+               \|                             |
+               \|                             v
+               \|                        PostgreSQL
+               \|                             |
                v                             |
         Nhost Workflow Function <------------+
                |
@@ -98,18 +126,18 @@ A user from one organization must not be able to fetch workflows belonging to an
           Step Executor
                |
        +-------+--------+---------+---------+---------+---------+
-       |       |        |         |         |         |         |
+       \|       |        |         |         |         |         |
      Input    AI      HTTP    Condition  Approval  DB Write  Notify
-                                  |          |
-                                  |      Pause / Resume
+                                  \|          |
+                                  \|      Pause / Resume
                                   |
                                   v
                               Next step
-```
+\`\`\`
 
-## Execution Flow
+**## Execution Flow**
 
-```text
+\`\`\`text
 User
  ↓
 React UI
@@ -124,98 +152,98 @@ Membership / role check
  ↓
 Quota check
  ↓
-Create workflow_run
+Create workflow\_run
  ↓
 Execute steps sequentially
  ↓
-Create/update step_runs
+Create/update step\_runs
  ↓
 Continue / pause / fail
  ↓
 Persist final output
  ↓
-Complete workflow_run
-```
+Complete workflow\_run
+\`\`\`
 
 The React frontend is the control and visualization layer. Actual workflow execution happens server-side in the Workflow Executor and Step Executor.
 
----
+**---**
 
-# Technology Stack
+**# Technology Stack**
 
-| Layer | Technology | Responsibility |
-|---|---|---|
-| Frontend | React | Login, workflow UI, builder, execution UI |
-| Authentication | Nhost Auth | Authentication and sessions |
-| API | Hasura GraphQL | GraphQL/database access |
-| Database | PostgreSQL | Workflow definitions and execution state |
-| Backend | Node.js / Nhost Functions | Execution and approval handlers |
-| Workflow Engine | Custom Executor | Ordered execution and state management |
-| Integrations | LLM / REST APIs | AI and external API calls |
+\| Layer | Technology | Responsibility |
+\|---|---|---|
+\| Frontend | React | Login, workflow UI, builder, execution UI |
+\| Authentication | Nhost Auth | Authentication and sessions |
+\| API | Hasura GraphQL | GraphQL/database access |
+\| Database | PostgreSQL | Workflow definitions and execution state |
+\| Backend | Node.js / Nhost Functions | Execution and approval handlers |
+\| Workflow Engine | Custom Executor | Ordered execution and state management |
+\| Integrations | LLM / REST APIs | AI and external API calls |
 
----
+**---**
 
-# Database Model
+**# Database Model**
 
-```text
+\`\`\`text
 organizations
- ├── org_members
+ ├── org\_members
  └── workflows
-       ├── workflow_steps
-       ├── workflow_triggers
-       └── workflow_runs
-              └── step_runs
+       ├── workflow\_steps
+       ├── workflow\_triggers
+       └── workflow\_runs
+              └── step\_runs
 
-workflow_runs
- └── workflow_outputs
-```
+workflow\_runs
+ └── workflow\_outputs
+\`\`\`
 
-## Main Tables
+**## Main Tables**
 
-- `organizations` — organization information and quota
-- `org_members` — user membership and role
-- `workflows` — reusable workflow definitions
-- `workflow_steps` — ordered steps and JSON configuration
-- `workflow_triggers` — trigger definitions
-- `workflow_runs` — one record per execution
-- `step_runs` — execution state for each step
-- `workflow_outputs` — persisted DB-write output
+\- \`organizations\` — organization information and quota
+\- \`org\_members\` — user membership and role
+\- \`workflows\` — reusable workflow definitions
+\- \`workflow\_steps\` — ordered steps and JSON configuration
+\- \`workflow\_triggers\` — trigger definitions
+\- \`workflow\_runs\` — one record per execution
+\- \`step\_runs\` — execution state for each step
+\- \`workflow\_outputs\` — persisted DB-write output
 
 Steps execute using:
 
-```text
-workflow_steps.position ASC
-```
+\`\`\`text
+workflow\_steps.position ASC
+\`\`\`
 
 Workflow definitions are separated from execution state so the same workflow can have multiple independent runs.
 
----
+**---**
 
-# Supported Workflow Steps
+**# Supported Workflow Steps**
 
-```text
+\`\`\`text
 input
-ai / llm_call
-http_request
-conditional_branch
-approval_gate
-db_write
+ai / llm\_call
+http\_request
+conditional\_branch
+approval\_gate
+db\_write
 notify
-```
+\`\`\`
 
-## Input
+**## Input**
 
 Receives the initial workflow input.
 
 Example:
 
-```json
+\`\`\`json
 {
-  "customer_message": "I need help with my order"
+  "customer\_message": "I need help with my order"
 }
-```
+\`\`\`
 
-## AI / LLM
+**## AI / LLM**
 
 Processes workflow data and returns structured output.
 
@@ -223,46 +251,46 @@ The project supports an LLM integration path and a development fallback when an 
 
 Example fallback:
 
-```json
+\`\`\`json
 {
-  "_stubbed": true,
+  "\_stubbed": true,
   "category": "general",
   "confidence": 0.75
 }
-```
+\`\`\`
 
-## HTTP Request
+**## HTTP Request**
 
 Calls an external HTTP API. Transient HTTP failures can be retried before the workflow is marked failed.
 
 Example:
 
-```json
+\`\`\`json
 {
-  "url": "https://dummyjson.com/test",
+  "url": "https\://dummyjson.com/test",
   "method": "GET"
 }
-```
+\`\`\`
 
-## Conditional Branch
+**## Conditional Branch**
 
 Evaluates the previous step's output.
 
 Example:
 
-```json
+\`\`\`json
 {
   "field": "category",
   "operator": "equals",
   "value": "order"
 }
-```
+\`\`\`
 
-## Approval Gate
+**## Approval Gate**
 
 Persists a paused state until an authorized user approves the step.
 
-```text
+\`\`\`text
 RUNNING
    ↓
 APPROVAL GATE
@@ -276,25 +304,25 @@ RUNNING
 Remaining Steps
    ↓
 COMPLETED
-```
+\`\`\`
 
 The backend does not keep the original serverless request alive while waiting for a human.
 
-## DB Write
+**## DB Write**
 
-Persists workflow data into `workflow_outputs`.
+Persists workflow data into \`workflow\_outputs\`.
 
 The current implementation does not expose arbitrary SQL execution.
 
-## Notification
+**## Notification**
 
 Executes the workflow notification step. The implementation can be extended with external delivery integrations.
 
----
+**---**
 
-# Backend Execution Engine
+**# Backend Execution Engine**
 
-```text
+\`\`\`text
 functions/workflow-execution/
 ├── executor/
 │   ├── workflowExecutor.js
@@ -311,51 +339,51 @@ functions/workflow-execution/
     ├── approvalStep.js
     ├── dbWriteStep.js
     └── notificationStep.js
-```
+\`\`\`
 
 The Workflow Executor:
 
-1. Loads the workflow.
-2. Checks membership and quota.
-3. Creates a `workflow_run`.
-4. Executes ordered steps.
-5. Persists `step_runs`.
-6. Handles failures.
-7. Pauses at approval gates.
-8. Resumes after approval.
-9. Completes the workflow run.
+1\. Loads the workflow.
+2\. Checks membership and quota.
+3\. Creates a \`workflow\_run\`.
+4\. Executes ordered steps.
+5\. Persists \`step\_runs\`.
+6\. Handles failures.
+7\. Pauses at approval gates.
+8\. Resumes after approval.
+9\. Completes the workflow run.
 
 The Step Executor dispatches each step to its implementation, making the engine extensible.
 
----
+**---**
 
-# State Model
+**# State Model**
 
-## Workflow
+**## Workflow**
 
-```text
+\`\`\`text
 running
 paused
 completed
 failed
-```
+\`\`\`
 
-## Step
+**## Step**
 
-```text
+\`\`\`text
 running
 paused
 completed
 failed
-```
+\`\`\`
 
----
+**---**
 
-# Authentication & Authorization
+**# Authentication & Authorization**
 
 Authentication is handled by Nhost:
 
-```text
+\`\`\`text
 React
  ↓
 Nhost Auth
@@ -363,109 +391,109 @@ Nhost Auth
 Authenticated Session / JWT
  ↓
 Hasura / Nhost Functions
-```
+\`\`\`
 
 Application roles:
 
-```text
+\`\`\`text
 owner
 editor
 viewer
-```
+\`\`\`
 
-## Security Boundary
+**## Security Boundary**
 
-```text
+\`\`\`text
 user
  ↓
-org_members
+org\_members
  ↓
 organization
  ↓
 workflow
  ↓
-workflow_run
+workflow\_run
  ↓
-step_run
-```
+step\_run
+\`\`\`
 
 The workflow execution path performs application-level membership and role checks.
 
-## Organization-Level Authorization
+**## Organization-Level Authorization**
 
 The Hasura row-level select permissions have been configured to scope workflow-related data through:
 
-```text
+\`\`\`text
 workflow
  ↓
 organization
  ↓
-org_members
+org\_members
  ↓
-user_id = X-Hasura-User-Id
-```
+user\_id = X-Hasura-User-Id
+\`\`\`
 
 This means the authenticated user can fetch rows only when the related organization contains that user as a member.
 
 This organization-scoped select policy has been configured for the workflow-related read paths, including:
 
-- `workflows`
-- `workflow_steps`
-- `workflow_runs`
-- `workflow_outputs`
-- `workflow_triggers`
+\- \`workflows\`
+\- \`workflow\_steps\`
+\- \`workflow\_runs\`
+\- \`workflow\_outputs\`
+\- \`workflow\_triggers\`
 
 The same authorization approach is used for owner, editor, and viewer roles so users see data belonging to their own organization rather than data from another organization.
 
----
+**---**
 
-# Role Model
+**# Role Model**
 
-## Owner
+**## Owner**
 
 Owner has full organization-level control.
 
-```text
+\`\`\`text
 Owner
  ├── View organization workflows
  ├── Manage workflows
  ├── Execute workflows
  ├── Access workflow runs
  └── Access organization data
-```
+\`\`\`
 
-## Editor
+**## Editor**
 
 Editor can work with workflows within their organization according to the configured permissions.
 
-```text
+\`\`\`text
 Editor
  ├── View organization workflows
  ├── Work with workflows
  └── Execute workflows where permitted
-```
+\`\`\`
 
-## Viewer
+**## Viewer**
 
 Viewer is intended to be read-only.
 
-```text
+\`\`\`text
 Viewer
  ├── View workflows
  ├── View workflow-related execution data
  └── No workflow modification
-```
+\`\`\`
 
----
+**---**
 
-# Authorization Verification
+**# Authorization Verification
 
 The authorization model has been tested with users from different organizations.
 
 ### Organization A Owner
 
 ```text
-User: brammeshnithin@gmail.com
+User: owneruser@gmail.com
 Role: owner
 Organization: AI Workflow Builder
 ```
@@ -510,7 +538,7 @@ Cannot see Organization B workflows
 ### Organization B Owner
 
 ```text
-User: owneruser@gmail.com
+User: brammeshnithin@gmail.com
 Role: owner
 Organization: Test Organization B
 ```
@@ -522,85 +550,85 @@ Can see Organization B workflows
 Cannot see Organization A workflows
 ```
 
-The verified GraphQL results show that the Organization A owner returns only Organization A workflows, while the Organization B owner returns only Organization B workflows.
+The organization/member configuration shown in the database contains three Organization A members (`owner`, `editor`, `viewer`) and a separate Organization B owner. This provides the intended RBAC and tenant-isolation test setup.
 
 ---
 
-# Quota
+# Quota**
 
 Before execution:
 
-```text
-calls_used < calls_allowed
-```
+\`\`\`text
+calls\_used < calls\_allowed
+\`\`\`
 
 Quota enforcement is performed server-side rather than trusting the frontend.
 
----
+**---**
 
-# GraphQL Layer
+**# GraphQL Layer**
 
 GraphQL operations are kept under:
 
-```text
+\`\`\`text
 functions/workflow-execution/graphql/
-```
+\`\`\`
 
 Representative operations:
 
-```text
-GET_WORKFLOW_WITH_STEPS
-GET_MEMBERSHIP
-GET_ORG_QUOTA
-GET_STEP_RUN
+\`\`\`text
+GET\_WORKFLOW\_WITH\_STEPS
+GET\_MEMBERSHIP
+GET\_ORG\_QUOTA
+GET\_STEP\_RUN
 
-CREATE_WORKFLOW_RUN
-UPDATE_WORKFLOW_RUN
-CREATE_STEP_RUN
-COMPLETE_STEP_RUN
-FAIL_STEP_RUN
-PAUSE_STEP_RUN
-PAUSE_WORKFLOW_RUN
-RESUME_WORKFLOW_RUN
-APPROVE_STEP_RUN
-INCREMENT_ORG_QUOTA
-DB_WRITE_OUTPUT
-```
+CREATE\_WORKFLOW\_RUN
+UPDATE\_WORKFLOW\_RUN
+CREATE\_STEP\_RUN
+COMPLETE\_STEP\_RUN
+FAIL\_STEP\_RUN
+PAUSE\_STEP\_RUN
+PAUSE\_WORKFLOW\_RUN
+RESUME\_WORKFLOW\_RUN
+APPROVE\_STEP\_RUN
+INCREMENT\_ORG\_QUOTA
+DB\_WRITE\_OUTPUT
+\`\`\`
 
-## Server-side Configuration
+**## Server-side Configuration**
 
-```text
-NHOST_GRAPHQL_URL
-NHOST_ADMIN_SECRET
-```
+\`\`\`text
+NHOST\_GRAPHQL\_URL
+NHOST\_ADMIN\_SECRET
+\`\`\`
 
 Optional:
 
-```text
-GROQ_API_KEY
-```
+\`\`\`text
+GROQ\_API\_KEY
+\`\`\`
 
-Never expose `NHOST_ADMIN_SECRET` to React or commit it to Git.
+Never expose \`NHOST\_ADMIN\_SECRET\` to React or commit it to Git.
 
----
+**---**
 
-# Frontend
+**# Frontend**
 
 The React application provides:
 
-- Authentication
-- Organization context
-- Workflow listing
-- Workflow creation
-- Workflow builder
-- Step selection/configuration
-- Workflow execution
-- Approval interaction
-- Execution history
+\- Authentication
+\- Organization context
+\- Workflow listing
+\- Workflow creation
+\- Workflow builder
+\- Step selection/configuration
+\- Workflow execution
+\- Approval interaction
+\- Execution history
 
 Important files:
 
-```text
+\`\`\`text
 frontend/src/
 ├── nhost.js
 ├── pages/
@@ -609,11 +637,11 @@ frontend/src/
 │   ├── WorkflowBuilder.jsx
 │   └── WorkflowRun.jsx
 └── components/
-```
+\`\`\`
 
 The frontend triggers backend execution rather than executing workflow steps locally:
 
-```text
+\`\`\`text
 React
  ↓
 runWorkflow(workflowId, input)
@@ -621,11 +649,11 @@ runWorkflow(workflowId, input)
 Nhost Function: /workflow-execution
  ↓
 Workflow Executor
-```
+\`\`\`
 
 Approval follows the same separation:
 
-```text
+\`\`\`text
 React
  ↓
 approveStep(stepRunId)
@@ -635,15 +663,15 @@ Nhost Function: /approve-step
 Backend authorization
  ↓
 Resume workflow
-```
+\`\`\`
 
----
+**---**
 
-# Demonstrated End-to-End Scenario
+**# Demonstrated End-to-End Scenario**
 
 The deployed application has been tested with a Customer Support Workflow:
 
-```text
+\`\`\`text
 Customer Support Workflow
         ↓
 Receive Customer Request
@@ -663,139 +691,154 @@ Save Workflow Result
 Notify Customer Support
         ↓
 Completed
-```
+\`\`\`
 
 The execution screen shows individual step states and final workflow completion.
 
----
+**---**
 
-# Assignment Requirements vs Current Status
+**# Verified Organization Configuration
 
-| Requirement | Status |
-|---|---|
-| React frontend | ✅ Completed |
-| Nhost authentication | ✅ Completed |
-| PostgreSQL schema | ✅ Completed |
-| Hasura GraphQL | ✅ Completed |
-| Workflow + ordered steps | ✅ Completed |
-| Workflow runs / step runs | ✅ Completed |
-| `llm_call` | ✅ Implemented with AI path + disclosed development fallback |
-| `http_request` | ✅ Completed |
-| `conditional_branch` | ✅ Completed |
-| `approval_gate` | ✅ Completed and demonstrated |
-| `db_write` | ✅ Completed through `workflow_outputs` |
-| `notify` | ✅ Completed |
-| Manual workflow execution | ✅ Completed and demonstrated |
-| Quota checking | ✅ Completed |
-| Application membership checks | ✅ Completed |
-| Approval authorization | ✅ Completed in backend flow |
-| HTTP retry handling | ✅ Completed |
-| Owner/editor/viewer roles | ✅ Configured |
-| Organization-scoped workflow SELECT permissions | ✅ Completed |
-| Workflow-step SELECT permissions | ✅ Completed |
-| Workflow-run SELECT permissions | ✅ Completed |
-| Workflow-output SELECT permissions | ✅ Completed |
-| Workflow-trigger SELECT permissions | ✅ Completed |
-| Cross-organization workflow isolation | ✅ Verified with two organizations |
-| Webhook/scheduled/event trigger | ⚠️ Requires final verification/integration |
-| Hasura Actions | ⚠️ Requires final verification/integration |
-| GraphQL live subscription | ⚠️ Requires final verification/integration |
-| Complete mutation permissions for every role | ⚠️ Final verification required |
-| Production hardening | ⚠️ Remaining |
+| Organization | Organization ID | Members |
+|---|---|---|
+| **AI Workflow Builder (Organization A)** | `1b8a9323-bae0-47e2-8012-8f6bd3a534fd` | `owneruser@gmail.com` (owner), `testuserb@gmail.com` (editor), `viewer@test.com` (viewer) |
+| **Test Organization B (Organization B)** | `7c4f8a2e-1c6b-4d93-9f20-123456789abc` | `brammeshnithin@gmail.com` (owner) |
+
+All demo accounts use:
+
+```text
+Password: Password@123
+```
 
 ---
 
-# Current Completion Summary
+# Assignment Requirements vs Current Status**
 
-## Completed
+\| Requirement | Status |
+\|---|---|
+\| React frontend | ✅ Completed |
+\| Nhost authentication | ✅ Completed |
+\| PostgreSQL schema | ✅ Completed |
+\| Hasura GraphQL | ✅ Completed |
+\| Workflow + ordered steps | ✅ Completed |
+\| Workflow runs / step runs | ✅ Completed |
+\| \`llm\_call\` | ✅ Implemented with AI path + disclosed development fallback |
+\| \`http\_request\` | ✅ Completed |
+\| \`conditional\_branch\` | ✅ Completed |
+\| \`approval\_gate\` | ✅ Completed and demonstrated |
+\| \`db\_write\` | ✅ Completed through \`workflow\_outputs\` |
+\| \`notify\` | ✅ Completed |
+\| Manual workflow execution | ✅ Completed and demonstrated |
+\| Quota checking | ✅ Completed |
+\| Application membership checks | ✅ Completed |
+\| Approval authorization | ✅ Completed in backend flow |
+\| HTTP retry handling | ✅ Completed |
+\| Owner/editor/viewer roles | ✅ Configured |
+\| Organization-scoped workflow SELECT permissions | ✅ Completed |
+\| Workflow-step SELECT permissions | ✅ Completed |
+\| Workflow-run SELECT permissions | ✅ Completed |
+\| Workflow-output SELECT permissions | ✅ Completed |
+\| Workflow-trigger SELECT permissions | ✅ Completed |
+\| Cross-organization workflow isolation | ✅ Verified with two organizations |
+\| Webhook/scheduled/event trigger | ⚠️ Requires final verification/integration |
+\| Hasura Actions | ⚠️ Requires final verification/integration |
+\| GraphQL live subscription | ⚠️ Requires final verification/integration |
+\| Complete mutation permissions for every role | ⚠️ Final verification required |
+\| Production hardening | ⚠️ Remaining |
 
-- React frontend
-- Nhost authentication
-- Hasura GraphQL integration
-- PostgreSQL persistence
-- Organization and membership model
-- Owner/editor/viewer role model
-- Organization-scoped SELECT authorization
-- Cross-organization workflow isolation
-- Workflow definitions
-- Ordered workflow steps
-- Sequential workflow execution
-- AI step
-- HTTP step
-- Conditional branching
-- Approval pause/resume
-- DB write
-- Notification
-- Workflow and step run history
-- Quota checks
-- Application-level membership checks
-- Backend approval authorization
-- HTTP retry handling
-- Deployed frontend
-- End-to-end live demo
+**---**
 
-## Remaining / Final Verification
+**# Current Completion Summary**
 
-- Final verification of mutation permissions for every role
-- Final verification of webhook/scheduled/event triggers
-- Final Hasura Action verification
-- Final GraphQL live subscription verification
-- Additional workflow editing capability verification
-- Production hardening
+**## Completed**
 
----
+\- React frontend
+\- Nhost authentication
+\- Hasura GraphQL integration
+\- PostgreSQL persistence
+\- Organization and membership model
+\- Owner/editor/viewer role model
+\- Organization-scoped SELECT authorization
+\- Cross-organization workflow isolation
+\- Workflow definitions
+\- Ordered workflow steps
+\- Sequential workflow execution
+\- AI step
+\- HTTP step
+\- Conditional branching
+\- Approval pause/resume
+\- DB write
+\- Notification
+\- Workflow and step run history
+\- Quota checks
+\- Application-level membership checks
+\- Backend approval authorization
+\- HTTP retry handling
+\- Deployed frontend
+\- End-to-end live demo
 
-# Local Development
+**## Remaining / Final Verification**
 
-## Frontend
+\- Final verification of mutation permissions for every role
+\- Final verification of webhook/scheduled/event triggers
+\- Final Hasura Action verification
+\- Final GraphQL live subscription verification
+\- Additional workflow editing capability verification
+\- Production hardening
 
-```bash
+**---**
+
+**# Local Development**
+
+**## Frontend**
+
+\`\`\`bash
 cd frontend
 npm install
 npm run dev
-```
+\`\`\`
 
 Production build:
 
-```bash
+\`\`\`bash
 npm run build
-```
+\`\`\`
 
-## Functions
+**## Functions**
 
-```bash
+\`\`\`bash
 cd functions
 npm install
-```
+\`\`\`
 
 Server-side variables:
 
-```text
-NHOST_GRAPHQL_URL
-NHOST_ADMIN_SECRET
-```
+\`\`\`text
+NHOST\_GRAPHQL\_URL
+NHOST\_ADMIN\_SECRET
+\`\`\`
 
 Optional:
 
-```text
-GROQ_API_KEY
-```
+\`\`\`text
+GROQ\_API\_KEY
+\`\`\`
 
----
+**---**
 
-# Testing
+**# Testing**
 
 Available test scripts include:
 
-```bash
+\`\`\`bash
 node test-graphql.js
-node run-workflow.js
+node run-workflow\.js
 node test-server.js
-```
+\`\`\`
 
 Recommended final verification:
 
-```text
+\`\`\`text
 Login
  ↓
 Open workflow
@@ -819,13 +862,13 @@ Confirm completed history
 Test owner/editor/viewer access
  ↓
 Test cross-organization isolation
-```
+\`\`\`
 
----
+**---**
 
-# Project Structure
+**# Project Structure**
 
-```text
+\`\`\`text
 ai-workflow-builder/
 ├── frontend/
 ├── functions/
@@ -834,34 +877,34 @@ ai-workflow-builder/
 │   │   ├── graphql/
 │   │   └── steps/
 │   ├── approve-step/
-│   ├── run-workflow.js
+│   ├── run-workflow\.js
 │   ├── test-graphql.js
 │   └── test-server.js
 ├── database/
 ├── hasura/
 └── README.md
-```
+\`\`\`
 
----
+**---**
 
-# Security Notes
+**# Security Notes**
 
-- Authentication is handled through Nhost.
-- Authorization is enforced through organization membership and role checks.
-- Hasura row-level SELECT policies restrict workflow data to the authenticated user's organization.
-- Server-side membership checks are performed during workflow execution.
-- `NHOST_ADMIN_SECRET` must remain server-side.
-- Demo credentials in this README are intended only for the provided test deployment.
-- For a production deployment, use separate passwords and rotate any credentials that have been publicly shared.
+\- Authentication is handled through Nhost.
+\- Authorization is enforced through organization membership and role checks.
+\- Hasura row-level SELECT policies restrict workflow data to the authenticated user's organization.
+\- Server-side membership checks are performed during workflow execution.
+\- \`NHOST\_ADMIN\_SECRET\` must remain server-side.
+\- Demo credentials in this README use `Password@123` and are intended only for the provided test deployment.
+\- For a production deployment, use separate passwords and rotate any credentials that have been publicly shared.
 
----
+**---**
 
-# Engineering Focus
+**# Engineering Focus**
 
-**Backend Engineering · Workflow Execution Engines · GraphQL · PostgreSQL · Authentication · Authorization · Serverless Architecture · REST API Integration · State Management · Error Handling · Extensible Step Execution**
+**\*\*Backend Engineering · Workflow Execution Engines · GraphQL · PostgreSQL · Authentication · Authorization · Serverless Architecture · REST API Integration · State Management · Error Handling · Extensible Step Execution\*\***
 
----
+**---**
 
-# Author
+**# Author**
 
-**Nithin B**
+**\*\*Nithin B\*\***
