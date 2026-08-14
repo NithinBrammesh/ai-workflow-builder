@@ -868,41 +868,46 @@ ai-workflow-builder/
 
 ## Completed
 
-- React frontend
-- Nhost authentication
-- Hasura GraphQL integration
-- PostgreSQL persistence
-- Organization model
-- Organization membership model
-- Owner/editor/viewer role model
-- Organization-scoped SELECT authorization
-- Cross-organization isolation setup
-- Workflow definitions
-- Ordered workflow steps
-- Sequential workflow execution
-- Input step
-- AI step
-- HTTP step
-- Conditional branching
-- Approval pause/resume
+- Authentication
+- Organizations and memberships
+- Owner / Editor / Viewer RBAC
+- Organization-scoped Hasura permissions
+- Workflow CRUD
+- Workflow steps
+- Manual execution
+- 7-step workflow execution
+- HTTP request
+- AI development stub
+- Conditional branch
+- Approval gate
 - DB write
-- Notification
-- Workflow run history
-- Step run history
-- Quota checks
-- Application-level membership checks
-- Backend approval authorization
-- HTTP retry handling
+- Notify
+- Workflow runs
+- Step runs
+- Approval pause/resume
+- Workflow deletion
+- Frontend workflow builder
+- Frontend execution UI
 - Deployed frontend
-- End-to-end workflow demonstration
 
-## Remaining / Final Verification
+## Implemented — Final Verification Required
 
-- Final verification of mutation permissions for every role
-- Final verification of webhook/scheduled/event triggers
-- Final Hasura Action verification
-- Final GraphQL live subscription verification
-- Additional production hardening
+- Quota enforcement
+- HTTP retry handling
+- Cross-organization direct-ID isolation
+- Backend step-level gating
+- Approval authorization
+- GraphQL live subscription
+- Hasura Action integration
+
+## Remaining
+
+- Non-manual trigger (webhook/event/scheduled)
+- Usage aggregation
+- Frontend quota/usage indicator
+- Final security verification
+- Final end-to-end assignment scenario
+- Final submission recording
 
 ---
 
