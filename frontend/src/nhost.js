@@ -138,6 +138,46 @@ export async function signOut() {
   }
 }
 
+
+
+/*
+ * --------------------------------------------------
+ * TRIGGER WORKFLOW THROUGH HASURA ACTION
+ * --------------------------------------------------
+ */
+
+export async function triggerWorkflowRun(
+  workflowId
+) {
+  const mutation = `
+    mutation TriggerWorkflowRun($workflowId: uuid!) {
+      triggerWorkflowRun(workflow_id: $workflowId) {
+        workflow_run_id
+        status
+      }
+    }
+  `;
+
+  console.log(
+    "TRIGGER WORKFLOW ACTION:",
+    workflowId
+  );
+
+  const data = await graphqlRequest(
+    mutation,
+    {
+      workflowId,
+    }
+  );
+
+  console.log(
+    "TRIGGER WORKFLOW ACTION RESULT:",
+    data
+  );
+
+  return data.triggerWorkflowRun;
+}
+
 /*
  * --------------------------------------------------
  * GRAPHQL
@@ -157,6 +197,8 @@ export async function signOut() {
  * configuration to determine which workflows/data
  * the user can access.
  */
+
+
 
 export async function graphqlRequest(
   query,
@@ -205,13 +247,17 @@ export async function graphqlRequest(
      * GraphQL errors.
      */
     if (body?.errors?.length) {
+      console.error(
+        "GraphQL errors:",
+        JSON.stringify(body.errors, null, 2)
+      );
+
       const message = body.errors
         .map((error) => error.message)
         .join("; ");
 
       throw new Error(message);
     }
-
     /*
      * No data returned.
      */

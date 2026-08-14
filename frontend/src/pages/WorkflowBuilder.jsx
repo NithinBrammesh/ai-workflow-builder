@@ -23,7 +23,7 @@ import {
 import StepNode from "../components/StepNode";
 import {
   graphqlRequest,
-  runWorkflow,
+  triggerWorkflowRun,
   getCurrentUser,
 } from "../nhost";
 
@@ -609,12 +609,9 @@ async function handleDeleteStep(stepId) {
         setRunning(true);
         setRunError("");
 
-        const result = await runWorkflow(
-          workflowId,
-          {
-            customer_message: workflow.description,
-          }
-        );
+  const result = await triggerWorkflowRun(
+    workflowId
+  );
 
         console.log(
           "Workflow execution result:",
