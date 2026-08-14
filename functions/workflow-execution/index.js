@@ -41,7 +41,12 @@ module.exports = async (req, res) => {
     });
   }
 
-  const { workflow_id, input } = req.body || {};
+  const body = req.body || {};
+
+  const actionInput = body.input || body;
+
+  const workflow_id = actionInput.workflow_id;
+  const input = actionInput.input || {};
 
   if (!workflow_id) {
     return res.status(400).json({
