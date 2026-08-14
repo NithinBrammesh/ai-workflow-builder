@@ -6,9 +6,6 @@ const { getAuthenticatedUserId } = require("./auth");
 // Nhost:
 // POST /v1/functions/workflow-execution
 
-
-
-
 module.exports = async (req, res) => {
 
   // --------------------------------------------------
@@ -34,10 +31,9 @@ module.exports = async (req, res) => {
     return res.status(204).end();
   }
 
-
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method not allowed, use POST",
+      message: "Method not allowed, use POST",
     });
   }
 
@@ -50,7 +46,7 @@ module.exports = async (req, res) => {
 
   if (!workflow_id) {
     return res.status(400).json({
-      error: "workflow_id is required",
+      message: "workflow_id is required",
     });
   }
 
@@ -63,6 +59,7 @@ module.exports = async (req, res) => {
     // Never accept user_id from req.body.
     // The identity comes from the verified Nhost JWT.
     //
+
     const userId = getAuthenticatedUserId(req);
 
     console.log(
@@ -80,13 +77,17 @@ module.exports = async (req, res) => {
     );
 
     return res.status(200).json(result);
+
   } catch (error) {
+
     console.error(
       "Workflow execution failed:",
       error
     );
 
-    const message = error.message || "Workflow execution failed";
+    const message =
+      error.message ||
+      "Workflow execution failed";
 
     // Authentication failures
     if (
@@ -95,12 +96,12 @@ module.exports = async (req, res) => {
       message === "Authenticated user ID is missing"
     ) {
       return res.status(401).json({
-        error: message,
+        message,
       });
     }
 
     return res.status(400).json({
-      error: message,
+      message,
     });
   }
 };
