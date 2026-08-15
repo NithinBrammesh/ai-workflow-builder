@@ -210,3 +210,7 @@ adminPassword = '{{ secrets.GRAFANA_ADMIN_PASSWORD }}'
 enabled = false
 
 [observability.grafana.contacts]
+
+[[global.environment]]
+name = "SLACK_WEBHOOK_URL"
+value = '{{ secrets.SLACK_WEBHOOK_URL }}'
