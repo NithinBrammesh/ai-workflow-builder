@@ -1,6 +1,9 @@
 async function executeNotificationStep(step, input) {
   const channel = step.config?.channel || "console";
 
+  const customerMessage =
+    input?.customer_message || "";
+
   const analysis = input?.ai_analysis || {};
   const httpResponse = input?.http_response || {};
   const condition = input?.condition_result || {};
@@ -9,29 +12,51 @@ async function executeNotificationStep(step, input) {
   const message = [
     "*Workflow Completed*",
     "",
-    `*Category:* ${analysis.category || "Unknown"}`,
-    `*Confidence:* ${analysis.confidence ?? "N/A"}`,
-    `*Cost Required:* ${analysis.cost_required ? "Yes" : "No"}`,
-    `*Timeline Required:* ${analysis.timeline_required ? "Yes" : "No"}`,
+
+    "*Customer Request*",
+    customerMessage || "No customer message provided.",
     "",
+
+    "*AI Analysis*",
+    `*Category:* ${analysis.category || "Unknown"}`,
+    `*Confidence:* ${
+      typeof analysis.confidence === "number"
+        ? `${Math.round(analysis.confidence * 100)}%`
+        : "N/A"
+    }`,
+    `*Cost Required:* ${
+      analysis.cost_required ? "Yes" : "No"
+    }`,
+    `*Timeline Required:* ${
+      analysis.timeline_required ? "Yes" : "No"
+    }`,
+    "",
+
     "*HTTP Request*",
     `• Method: ${httpResponse.method || "N/A"}`,
     `• Status: ${httpResponse.status || "N/A"}`,
     "",
+
     "*Condition*",
     `• Expected: ${condition.expected || "N/A"}`,
-    `• Result: ${condition.passed ? "Passed" : "Not Passed"}`,
+    `• Result: ${
+      condition.passed ? "Passed" : "Not Passed"
+    }`,
     "",
+
     "*Database*",
     `• Saved: ${dbWrite.saved ? "Yes" : "No"}`,
     `• Output ID: ${dbWrite.id || "N/A"}`,
   ].join("\n");
 
   if (channel === "slack") {
-    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+    const webhookUrl =
+      process.env.SLACK_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      throw new Error("SLACK_WEBHOOK_URL is not configured");
+      throw new Error(
+        "SLACK_WEBHOOK_URL is not configured"
+      );
     }
 
     const response = await fetch(webhookUrl, {
@@ -59,7 +84,10 @@ async function executeNotificationStep(step, input) {
     };
   }
 
-  console.log(`[notify:${channel}]`, message);
+  console.log(
+    `[notify:${channel}]`,
+    message
+  );
 
   return {
     notified: true,
@@ -68,4 +96,6 @@ async function executeNotificationStep(step, input) {
   };
 }
 
-module.exports = { executeNotificationStep };
+module.exports = {
+  executeNotificationStep,
+};
