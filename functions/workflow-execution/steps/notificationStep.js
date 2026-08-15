@@ -1,30 +1,23 @@
 async function executeNotificationStep(step, input) {
   const channel = step.config?.channel || "console";
-
   const template =
-    step.config?.message ||
-    "Workflow notification: {{data}}";
-
-  const category =
-    input?.ai_analysis?.category ||
-    input?.category ||
-    "unknown";
+    step.config?.message || "Workflow notification: {{data}}";
 
   const message = template
-    .replace("{{category}}", category)
-    .replace("{{data}}", JSON.stringify(input));
+    .replace("{{data}}", JSON.stringify(input))
+    .replace(
+      "{{category}}",
+      input?.ai_analysis?.category ||
+        input?.category ||
+        "unknown"
+    );
 
-  // ------------------------------------------------------------
-  // Slack notification
-  // ------------------------------------------------------------
-
+  // Send real notification to Slack
   if (channel === "slack") {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      throw new Error(
-        "SLACK_WEBHOOK_URL is not configured"
-      );
+      throw new Error("SLACK_WEBHOOK_URL is not configured");
     }
 
     const response = await fetch(webhookUrl, {
@@ -45,32 +38,21 @@ async function executeNotificationStep(step, input) {
       );
     }
 
-    console.log(
-      `[notify:slack] Notification sent successfully`
-    );
-
     return {
       notified: true,
       channel: "slack",
       message,
-      status: "sent",
     };
   }
 
-  // ------------------------------------------------------------
   // Console notification
-  // ------------------------------------------------------------
-
   console.log(`[notify:${channel}]`, message);
 
   return {
     notified: true,
     channel,
     message,
-    status: "sent",
   };
 }
 
-module.exports = {
-  executeNotificationStep,
-};
+module.exports = { executeNotificationStep };
