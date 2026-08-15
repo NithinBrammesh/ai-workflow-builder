@@ -210,7 +210,7 @@ function getDefaultStepConfig(type) {
     case "notify":
       return {
         description: "Send a workflow notification.",
-        channel: "console",
+        channel: "slack",
         message: "Workflow completed: {{data}}",
       };
 
@@ -366,6 +366,26 @@ const DELETE_WORKFLOW_STEP = `
   }
 `;
 
+const UPDATE_WORKFLOW_STEP = `
+  mutation UpdateWorkflowStep(
+    $stepId: uuid!
+    $config: jsonb!
+  ) {
+    update_workflow_steps_by_pk(
+      pk_columns: { id: $stepId }
+      _set: {
+        config: $config
+      }
+    ) {
+      id
+      name
+      type
+      position
+      config
+    }
+  }
+`;
+
   
 
   /* --------------------------------------------------
@@ -401,6 +421,56 @@ const DELETE_WORKFLOW_STEP = `
   /* --------------------------------------------------
      Load workflow
   -------------------------------------------------- */
+
+
+
+async function handleSaveStepConfig() {
+  if (!selectedStep?.id) {
+    return;
+  }
+
+  try {
+    setSaving(true);
+    setSaveError("");
+
+    const data = await graphqlRequest(
+      UPDATE_WORKFLOW_STEP,
+      {
+        stepId: selectedStep.id,
+        config: selectedStep.config || {},
+      }
+    );
+
+    const updatedStep =
+      data?.update_workflow_steps_by_pk;
+
+    if (!updatedStep?.id) {
+      throw new Error(
+        "Step configuration was not saved."
+      );
+    }
+
+    setSelectedStep(updatedStep);
+
+    await loadWorkflow();
+
+  } catch (err) {
+    console.error(
+      "Failed to save step configuration:",
+      err
+    );
+
+    setSaveError(
+      err.message ||
+        "Failed to save step configuration"
+    );
+  } finally {
+    setSaving(false);
+  }
+}
+
+
+
 
   useEffect(() => {
     if (!workflowId) {
@@ -1435,27 +1505,79 @@ async function handleDeleteStep(stepId) {
 
               {/* Notification configuration */}
 
-              {selectedStep.type ===
-                "notify" && (
+              {/* Notification configuration */}
+              {selectedStep.type === "notify" && (
+                <>
+                  <div className="config-field">
+                    <label>
+                      Channel
+                    </label>
 
-                <div className="config-field">
+                    <select
+                      value={
+                        selectedStep.config?.channel ||
+                        "console"
+                      }
+                      onChange={(event) => {
+                        setSelectedStep((prev) => ({
+                          ...prev,
+                          config: {
+                            ...(prev.config || {}),
+                            channel: event.target.value,
+                          },
+                        }));
+                      }}
+                    >
+                      <option value="console">
+                        Console
+                      </option>
 
-                  <label>
-                    Channel
-                  </label>
+                      <option value="slack">
+                        Slack
+                      </option>
+                    </select>
+                  </div>
 
-                  <input
-                    value={
-                      selectedStep
-                        .config
-                        ?.channel ||
-                      "console"
-                    }
-                    readOnly
-                  />
+                  <div className="config-field">
+                    <label>
+                      Message
+                    </label>
 
-                </div>
+                    <textarea
+                      value={
+                        selectedStep.config?.message ||
+                        ""
+                      }
+                      onChange={(event) => {
+                        setSelectedStep((prev) => ({
+                          ...prev,
+                          config: {
+                            ...(prev.config || {}),
+                            message: event.target.value,
+                          },
+                        }));
+                      }}
+                      rows="5"
+                      placeholder="Enter notification message"
+                    />
+                  </div>
 
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSaveStepConfig}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <FiSave />
+                        Save Configuration
+                      </>
+                    )}
+                  </button>
+                </>
               )}
 
               {/* DB write information */}
