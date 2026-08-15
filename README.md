@@ -367,13 +367,14 @@ The demonstrated workflow successfully creates a persisted workflow output and r
 
 ## Notify
 
-Executes the notification step.
+Executes the notification step after workflow completion.
 
-The current demonstrated workflow uses:
+The demonstrated workflow uses Slack Incoming Webhooks.
 
 ```text
-Channel: console
-Status: Sent
+Channel: Slack
+Channel Name: #workflow-notifications
+Status: Sent    
 ```
 
 ---

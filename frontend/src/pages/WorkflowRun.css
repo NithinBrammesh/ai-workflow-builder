@@ -1062,3 +1062,53 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
+
+
+.workflow-output {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.output-section {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.output-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+.output-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 7px 0;
+  font-size: 13px;
+}
+
+.output-row span {
+  color: #6b7280;
+}
+
+.output-row strong {
+  color: #111827;
+  text-align: right;
+  word-break: break-word;
+}
+
+.output-success {
+  color: #16a34a !important;
+}
+
+.output-message {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4b5563;
+}

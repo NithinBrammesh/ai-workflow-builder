@@ -1,18 +1,32 @@
 async function executeNotificationStep(step, input) {
   const channel = step.config?.channel || "console";
-  const template =
-    step.config?.message || "Workflow notification: {{data}}";
 
-  const message = template
-    .replace("{{data}}", JSON.stringify(input))
-    .replace(
-      "{{category}}",
-      input?.ai_analysis?.category ||
-        input?.category ||
-        "unknown"
-    );
+  const analysis = input?.ai_analysis || {};
+  const httpResponse = input?.http_response || {};
+  const condition = input?.condition_result || {};
+  const dbWrite = input?.db_write || {};
 
-  // Send real notification to Slack
+  const message = [
+    "*Workflow Completed*",
+    "",
+    `*Category:* ${analysis.category || "Unknown"}`,
+    `*Confidence:* ${analysis.confidence ?? "N/A"}`,
+    `*Cost Required:* ${analysis.cost_required ? "Yes" : "No"}`,
+    `*Timeline Required:* ${analysis.timeline_required ? "Yes" : "No"}`,
+    "",
+    "*HTTP Request*",
+    `• Method: ${httpResponse.method || "N/A"}`,
+    `• Status: ${httpResponse.status || "N/A"}`,
+    "",
+    "*Condition*",
+    `• Expected: ${condition.expected || "N/A"}`,
+    `• Result: ${condition.passed ? "Passed" : "Not Passed"}`,
+    "",
+    "*Database*",
+    `• Saved: ${dbWrite.saved ? "Yes" : "No"}`,
+    `• Output ID: ${dbWrite.id || "N/A"}`,
+  ].join("\n");
+
   if (channel === "slack") {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
@@ -45,7 +59,6 @@ async function executeNotificationStep(step, input) {
     };
   }
 
-  // Console notification
   console.log(`[notify:${channel}]`, message);
 
   return {

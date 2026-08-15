@@ -1376,23 +1376,239 @@ useEffect(() => {
           {/* OUTPUT */}
           {/* ======================================== */}
 
-          {run?.output && (
-            <div className="run-side-section">
+{run?.output && (
+  <div className="run-side-section">
+    <h2>Output</h2>
 
-              <h2>
-                Output
-              </h2>
+    {(() => {
+      let workflowResult = null;
 
-              <pre className="json-box">
-                {JSON.stringify(
-                  run.output,
-                  null,
-                  2
-                )}
-              </pre>
+      try {
+        if (typeof run.output.message === "string") {
+          const prefix =
+            "Workflow completed: ";
+
+          if (
+            run.output.message.startsWith(prefix)
+          ) {
+            workflowResult = JSON.parse(
+              run.output.message.slice(
+                prefix.length
+              )
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Failed to parse workflow output:",
+          error
+        );
+      }
+
+      return (
+        <div className="workflow-output">
+
+          {/* Notification */}
+          <div className="output-section">
+            <div className="output-section-title">
+              Notification
+            </div>
+
+            <div className="output-row">
+              <span>Channel</span>
+              <strong>
+                {run.output.channel || "—"}
+              </strong>
+            </div>
+
+            <div className="output-row">
+              <span>Status</span>
+              <strong className="output-success">
+                {run.output.notified
+                  ? "✓ Sent"
+                  : "—"}
+              </strong>
+            </div>
+          </div>
+
+
+          {/* AI Analysis */}
+          {workflowResult?.ai_analysis && (
+            <div className="output-section">
+
+              <div className="output-section-title">
+                AI Analysis
+              </div>
+
+              <div className="output-row">
+                <span>Category</span>
+                <strong>
+                  {workflowResult.ai_analysis.category ||
+                    "—"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Confidence</span>
+                <strong>
+                  {typeof workflowResult.ai_analysis
+                    .confidence === "number"
+                    ? `${Math.round(
+                        workflowResult.ai_analysis
+                          .confidence * 100
+                      )}%`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Cost Required</span>
+                <strong>
+                  {workflowResult.ai_analysis
+                    .cost_required
+                    ? "Yes"
+                    : "No"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Timeline Required</span>
+                <strong>
+                  {workflowResult.ai_analysis
+                    .timeline_required
+                    ? "Yes"
+                    : "No"}
+                </strong>
+              </div>
 
             </div>
           )}
+
+
+          {/* HTTP */}
+          {workflowResult?.http_response && (
+            <div className="output-section">
+
+              <div className="output-section-title">
+                HTTP Request
+              </div>
+
+              <div className="output-row">
+                <span>Method</span>
+                <strong>
+                  {workflowResult.http_response
+                    .method || "—"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Status</span>
+                <strong className="output-success">
+                  {workflowResult.http_response
+                    .status === "ok"
+                    ? "✓ 200 OK"
+                    : workflowResult.http_response
+                        .status || "—"}
+                </strong>
+              </div>
+
+            </div>
+          )}
+
+
+          {/* Condition */}
+          {workflowResult?.condition_result && (
+            <div className="output-section">
+
+              <div className="output-section-title">
+                Condition
+              </div>
+
+              <div className="output-row">
+                <span>Field</span>
+                <strong>
+                  {workflowResult.condition_result
+                    .field || "—"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Expected</span>
+                <strong>
+                  {workflowResult.condition_result
+                    .expected || "—"}
+                </strong>
+              </div>
+
+              <div className="output-row">
+                <span>Result</span>
+                <strong>
+                  {workflowResult.condition_result
+                    .passed
+                    ? "✓ Passed"
+                    : "✗ Not Passed"}
+                </strong>
+              </div>
+
+            </div>
+          )}
+
+
+          {/* Database */}
+          {workflowResult?.db_write && (
+            <div className="output-section">
+
+              <div className="output-section-title">
+                Database
+              </div>
+
+              <div className="output-row">
+                <span>Status</span>
+                <strong className="output-success">
+                  {workflowResult.db_write.saved
+                    ? "✓ Saved successfully"
+                    : "Not saved"}
+                </strong>
+              </div>
+
+              {workflowResult.db_write.id && (
+                <div className="output-row">
+                  <span>Output ID</span>
+                  <strong
+                    title={
+                      workflowResult.db_write.id
+                    }
+                  >
+                    {workflowResult.db_write.id}
+                  </strong>
+                </div>
+              )}
+
+            </div>
+          )}
+
+
+          {/* Customer message */}
+          {workflowResult?.customer_message && (
+            <div className="output-section">
+
+              <div className="output-section-title">
+                Customer Request
+              </div>
+
+              <div className="output-message">
+                {workflowResult.customer_message}
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      );
+    })()}
+
+  </div>
+)}
 
           {/* ======================================== */}
           {/* RUN INFORMATION */}
