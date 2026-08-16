@@ -7,9 +7,11 @@ The project implements a mini workflow automation engine where authenticated use
 ## Links
 
 - **Live Demo:** https://ai-workflow-builder-12.netlify.app
-- **GitHub:** https://github.com/NithinBrammesh/ai-workflow-builder
-- **Demo Video:** https://www.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
-- **Technical Write-up:** https://drive.google.com/file/d/1fUV-J3B1UiBu-EWEL-46M_b8P2PxllV3/view
+- **GitHub Repository:** https://github.com/NithinBrammesh/ai-workflow-builder
+- **Initial Demo Video:** https://www.loom.com/share/0386174cfbd04accbdb03883e9f59b0c
+- **Complete Demo Video:** https://www.loom.com/share/a8193f056ea8441c8c6b35facfc6e066
+- **Technical Write-up:** https://drive.google.com/file/d/1l7oLjkA6v-gtKdRTDoPLjgKoZ0N8giqO/view
+- **Slack Workspace:** [Join Slack Workspace](https://join.slack.com/t/ai-workflow-testgroup/shared_invite/zt-46rw3a0wn-OrhVs80ZS23fITpNO1nKug)
 ---
 ## Key Capabilities
 - Visual workflow builder with ordered execution steps
